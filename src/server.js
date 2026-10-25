@@ -12,6 +12,13 @@ async function main() {
     console.error(err.message);
     process.exit(1);
   }
+  if (process.env.DB_AUTO_SETUP === 'true') {
+    // ใช้บน Render: ฐานข้อมูลว่าง -> สร้างตาราง + ข้อมูลตัวอย่าง, และคืนไฟล์ภาพ/สลิปตัวอย่างที่หายไป
+    const { ensureSchema, restoreSeedFiles } = require('./bootstrap');
+    if (await ensureSchema(db)) console.log('[setup] สร้างตารางและข้อมูลตัวอย่างในฐานข้อมูลแล้ว');
+    const restored = await restoreSeedFiles(db);
+    if (restored) console.log(`[setup] คัดลอกไฟล์ตัวอย่าง ${restored} ไฟล์ไปที่โฟลเดอร์อัปโหลดแล้ว`);
+  }
   await syncFunctions(db); // ลงทะเบียนฟังก์ชันที่ระบบรองรับ (จาก src/acl/functions.js)
 
   const app = createApp();

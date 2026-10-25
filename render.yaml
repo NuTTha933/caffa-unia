@@ -1,0 +1,37 @@
+# Render Blueprint — สร้างเว็บ + ฐานข้อมูล PostgreSQL ฟรีให้อัตโนมัติ
+# วิธีใช้: เปิด https://render.com/deploy?repo=https://github.com/NuTTha933/caffa-unia แล้วกด Apply
+services:
+  - type: web
+    name: caffa-unia
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: caffa-unia-db
+          property: connectionString
+      - key: DB_AUTO_SETUP
+        value: "true"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY
+        value: "true"
+      - key: SHOW_DEMO_ACCOUNTS
+        value: "true"
+      - key: SHOP_NAME
+        value: Caffa_Unia
+
+databases:
+  - name: caffa-unia-db
+    plan: free
+    region: singapore
+    databaseName: caffa_unia
+    user: caffa

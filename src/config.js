@@ -27,13 +27,22 @@ module.exports = {
   timezone: 'Asia/Bangkok',
   root,
 
-  db: {
-    host: process.env.DB_HOST || 'localhost',
-    port: int(process.env.DB_PORT, 5432),
-    database: process.env.DB_NAME || 'kernel_coffee',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '',
-  },
+  // ถ้ามี DATABASE_URL (เช่นบน Render) ใช้ค่านั้น ไม่งั้นใช้ DB_* ในไฟล์ .env
+  db: process.env.DATABASE_URL
+    ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+    }
+    : {
+      host: process.env.DB_HOST || 'localhost',
+      port: int(process.env.DB_PORT, 5432),
+      database: process.env.DB_NAME || 'kernel_coffee',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || '',
+    },
+
+  // กล่องบัญชีทดสอบในหน้าเข้าสู่ระบบ: แสดงในโหมดพัฒนา หรือเมื่อตั้ง SHOW_DEMO_ACCOUNTS=true (เว็บสาธิต)
+  showDemoAccounts: env !== 'production' || process.env.SHOW_DEMO_ACCOUNTS === 'true',
 
   session: {
     secret: sessionSecret,

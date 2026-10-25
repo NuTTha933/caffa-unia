@@ -41,7 +41,7 @@ function createApp({ sessionStore } = {}) {
   app.locals.h = require('./utils/viewHelpers');
   app.locals.appName = config.shop.name;
   app.locals.shop = config.shop;
-  app.locals.showDemoAccounts = !config.isProd;
+  app.locals.showDemoAccounts = config.showDemoAccounts;
 
   // 1) Security headers (CSP อนุญาตเฉพาะไฟล์จาก Server ตัวเอง)
   app.use(helmet({
