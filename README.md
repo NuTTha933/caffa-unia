@@ -29,6 +29,7 @@ psql -d kernel_coffee -f database/seed.sql
 | คำสั่ง | ใช้ทำอะไร |
 |---|---|
 | `npm test` | ทดสอบอัตโนมัติ 14 กรณีกับฐานข้อมูลทดสอบ `kernel_coffee_test` (ไม่แตะข้อมูลจริง) |
+| `npm run test:race` | ทดสอบ Race Condition 4 กรณี (ยิงคำขอที่ชนกันพร้อมกัน กรณีละ 15 รอบ) |
 | `npm run er` | สร้างโครง ER จากฐานข้อมูลจริง → `docs/er-diagram.dot` / `.mmd` (ไว้ตรวจเทียบกับภาพ) |
 | `npm run hash-password -- "รหัส"` | สร้าง bcrypt hash สำหรับใส่ใน SQL |
 
@@ -267,6 +268,7 @@ ER Diagram: `docs/er-diagram.png` (แสดงเฉพาะ PK และ FK �
 - Content-Security-Policy ไม่อนุญาต inline script / สคริปต์จากภายนอก (ฟอนต์และไฟล์ทั้งหมดเสิร์ฟจาก Server เอง)
 - SQL ใช้ parameterized query ทั้งหมด, EJS escape ข้อมูลผู้ใช้ทุกจุด (`<%= %>`)
 - ราคาออเดอร์คำนวณจากตารางเมนูฝั่ง Server เสมอ ไม่เชื่อค่าที่ Browser ส่งมา
+- กัน Race Condition: เปลี่ยนสถานะออเดอร์ แนบ/ลบสลิป ล็อกแถวออเดอร์ด้วย `SELECT ... FOR UPDATE`, ตรวจจำนวน Admin ด้วย `pg_advisory_xact_lock`, นับครั้งล็อกอินก่อนตรวจรหัสผ่าน (ทดสอบด้วย `npm run test:race`)
 - ป้องกัน open redirect ในพารามิเตอร์ `next` ของหน้าเข้าสู่ระบบ, ส่งออก CSV ป้องกัน formula injection
 
 ## 12. เปิดใช้งานออนไลน์ (Render)

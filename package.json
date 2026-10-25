@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "db:setup": "node scripts/db-setup.js",
     "test": "node --test --test-reporter=spec tests/system.test.js",
+    "test:race": "node --test --test-reporter=spec tests/race.test.js",
     "hash-password": "node scripts/hash-password.js",
     "er": "node scripts/generate-er.js"
   },

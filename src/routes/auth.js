@@ -39,9 +39,10 @@ router.post('/login', redirectIfLoggedIn, verifyCsrf, async (req, res) => {
     return renderLogin(res, 429, { username, next, error: 'เข้าสู่ระบบผิดหลายครั้งเกินไป กรุณารอ 10 นาทีแล้วลองใหม่' });
   }
 
+  // นับครั้งก่อนตรวจรหัสผ่าน (การตรวจและนับเกิดในจังหวะเดียวกัน) — กันการยิงคำขอพร้อมกันจำนวนมากให้ผ่านการตรวจก่อนถูกนับ
+  loginLimiter.fail(req, username);
   const result = await userService.authenticate(username, password);
   if (!result.user) {
-    loginLimiter.fail(req, username);
     // บันทึกชื่อบัญชีที่พยายามเข้าสู่ระบบ แต่ไม่บันทึกรหัสผ่าน
     await audit(req, {
       category: 'auth', action: 'login_failed', result: 'failure', user: null, username,

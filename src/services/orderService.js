@@ -219,7 +219,8 @@ async function create(req, input = {}) {
 
   // 2) บันทึกออเดอร์ในฐานข้อมูล — ราคาอ่านจากตารางเมนูเสมอ (ไม่เชื่อราคาจาก Browser)
   const row = await db.withTransaction(async (client) => {
-    const menu = (await client.query('SELECT * FROM menu_items WHERE id = ANY($1)', [lines.map((l) => l.menuId)])).rows;
+    // FOR SHARE: ระหว่างสร้างออเดอร์ ห้ามใครเปลี่ยนสถานะเปิด/ปิดขายหรือราคาของเมนูที่สั่ง (กัน race กับการกดปิดขาย)
+    const menu = (await client.query('SELECT * FROM menu_items WHERE id = ANY($1) FOR SHARE', [lines.map((l) => l.menuId)])).rows;
     const byId = new Map(menu.map((m) => [m.id, m]));
     for (const l of lines) {
       const m = byId.get(l.menuId);
@@ -390,22 +391,40 @@ async function remove(req, id) {
 // ---------------------------------------------------------------------
 //  สลิปโอนเงิน
 // ---------------------------------------------------------------------
+function slipUploadDenied(o, id) {
+  return forbidden(
+    o.status === 'pending' ? 'แนบสลิปได้เฉพาะออเดอร์ของตนเอง' : 'ออเดอร์นี้ผ่านขั้นตรวจสลิปแล้ว แนบสลิปเพิ่มไม่ได้',
+    { resourceType: 'order', resourceId: id, reason: 'slip_upload_not_allowed' },
+  );
+}
+
 async function uploadSlip(req, id, file) {
   const o = await getForUser(req.user, id);
-  if (!canUploadSlip(req.user, o)) {
-    throw forbidden(
-      o.status === 'pending' ? 'แนบสลิปได้เฉพาะออเดอร์ของตนเอง' : 'ออเดอร์นี้ผ่านขั้นตรวจสลิปแล้ว แนบสลิปเพิ่มไม่ได้',
-      { resourceType: 'order', resourceId: id, reason: 'slip_upload_not_allowed' },
-    );
+  if (!canUploadSlip(req.user, o)) throw slipUploadDenied(o, id);
+
+  // กัน Race Condition: ล็อกแถวออเดอร์ (FOR UPDATE) แล้วตรวจสถานะซ้ำใน Transaction เดียวกับการบันทึกสลิป
+  // การกดรับ/ปฏิเสธออเดอร์ และการแนบหรือลบสลิปของออเดอร์เดียวกันจึงต้องรอคิวกัน ไม่ทำพร้อมกัน
+  let savedName = null;
+  let result;
+  try {
+    result = await db.withTransaction(async (client) => {
+      const locked = (await client.query('SELECT * FROM orders WHERE id=$1 FOR UPDATE', [id])).rows[0];
+      if (!locked) throw notFound('ไม่พบออเดอร์');
+      if (!canUploadSlip(req.user, locked)) throw slipUploadDenied(locked, id);
+      const old = (await client.query(
+        `SELECT id, stored_name, original_name FROM files WHERE order_id=$1 AND kind='payment_slip'`, [id],
+      )).rows;
+      const saved = await fileService.saveUpload(req, { kind: 'payment_slip', file, orderId: id, client });
+      savedName = saved.stored_name;
+      if (old.length) await client.query('DELETE FROM files WHERE id = ANY($1::uuid[])', [old.map((f) => f.id)]);
+      return { saved, old };
+    });
+  } catch (err) {
+    if (savedName) await fileService.removeStored(savedName); // Transaction ไม่สำเร็จ → ลบไฟล์ที่เพิ่งเขียน
+    throw err;
   }
-  const old = (await db.query(
-    `SELECT id, stored_name, original_name FROM files WHERE order_id=$1 AND kind='payment_slip'`, [id],
-  )).rows;
-  const saved = await fileService.saveUpload(req, { kind: 'payment_slip', file, orderId: id });
-  for (const f of old) {
-    await db.query('DELETE FROM files WHERE id=$1', [f.id]);
-    await fileService.removeStored(f.stored_name);
-  }
+  const { saved, old } = result;
+  for (const f of old) await fileService.removeStored(f.stored_name); // ลบไฟล์สลิปเก่าหลัง COMMIT
   await audit(req, {
     category: 'file', action: 'file.upload', resourceType: 'order', resourceId: id,
     details: {
@@ -431,15 +450,22 @@ async function assertCanViewFile(user, file) {
 }
 
 async function deleteSlip(req, fileId) {
-  const file = await fileService.getFile(fileId);
-  if (file.kind !== 'payment_slip') throw notFound('ไม่พบสลิป');
-  const o = await findRaw(file.order_id);
-  if (!canView(req.user, o) || !canDeleteSlip(req.user, file, o)) {
-    throw forbidden('ลบได้เฉพาะสลิปที่ตนเองอัปโหลด และออเดอร์ยังรอตรวจ', {
-      resourceType: 'file', resourceId: file.id, reason: 'file_delete_denied', fileAccess: true,
-    });
-  }
-  await db.query('DELETE FROM files WHERE id=$1', [file.id]);
+  const found = await fileService.getFile(fileId);
+  if (found.kind !== 'payment_slip') throw notFound('ไม่พบสลิป');
+
+  // กัน Race Condition: ล็อกออเดอร์ก่อนลบ — ลบสลิปพร้อมกับที่ผู้จัดการกดรับออเดอร์ไม่ได้
+  const { file, o } = await db.withTransaction(async (client) => {
+    const locked = (await client.query('SELECT * FROM orders WHERE id=$1 FOR UPDATE', [found.order_id])).rows[0];
+    const current = (await client.query(`SELECT * FROM files WHERE id=$1 AND kind='payment_slip'`, [found.id])).rows[0];
+    if (!locked || !current) throw notFound('ไม่พบสลิป');
+    if (!canView(req.user, locked) || !canDeleteSlip(req.user, current, locked)) {
+      throw forbidden('ลบได้เฉพาะสลิปที่ตนเองอัปโหลด และออเดอร์ยังรอตรวจ', {
+        resourceType: 'file', resourceId: current.id, reason: 'file_delete_denied', fileAccess: true,
+      });
+    }
+    await client.query('DELETE FROM files WHERE id=$1', [current.id]);
+    return { file: current, o: locked };
+  });
   await fileService.removeStored(file.stored_name);
   await audit(req, {
     category: 'file', action: 'file.delete', resourceType: 'order', resourceId: o.id,

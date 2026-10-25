@@ -33,6 +33,9 @@ async function authenticate(username, password) {
 
 // ระบบต้องมี Admin ที่ใช้งานได้อย่างน้อย 1 คนเสมอ (เรียกภายใน Transaction ก่อน COMMIT)
 async function ensureAdminRemains(client) {
+  // กัน Race Condition (write skew): Admin 2 คนลดสิทธิ์กันเองพร้อมกัน แต่ละฝั่งจะยังนับเห็นอีกคนเป็น Admin
+  // ล็อกนี้ทำให้การตรวจจำนวน Admin ทำทีละ Transaction และนับหลังอีกฝั่ง COMMIT แล้วเสมอ
+  await client.query("SELECT pg_advisory_xact_lock(hashtext('caffa_unia.admin_guard'))");
   const n = (await client.query(
     `SELECT COUNT(*) AS n FROM users u JOIN roles r ON r.id = u.role_id
       WHERE r.is_admin AND u.is_active`,
