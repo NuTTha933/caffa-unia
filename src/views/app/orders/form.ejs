@@ -1,0 +1,48 @@
+<header class="page-head">
+  <h1>สั่งเครื่องดื่ม</h1>
+  <p class="page-head__lead">ใส่จำนวนเมนูที่ต้องการ ระบบคำนวณยอดจากราคาเมนูในฐานข้อมูลหลังกดยืนยัน แล้วจึงแนบสลิปในหน้าออเดอร์</p>
+</header>
+
+<% if (h.err(errors, 'items')) { %>
+  <div class="notice notice--danger" role="alert"><p><%= h.err(errors, 'items') %></p></div>
+<% } %>
+
+<form method="post" action="/app/orders" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <% groups.forEach(g => { %>
+    <section class="board__cat order-cat" aria-labelledby="g-<%= g.id %>">
+      <h2 id="g-<%= g.id %>"><%= g.name %></h2>
+      <% g.items.forEach(m => { const key = `m${m.id}`; const err = h.err(errors, `qty_${m.id}`); %>
+        <div class="pick<%= m.is_available ? '' : ' is-soldout' %>">
+          <div class="pick__row">
+            <div class="pick__head">
+              <label class="line__name" for="qty-<%= m.id %>"><%= m.name %></label>
+              <span class="line__leader" aria-hidden="true"></span>
+              <span class="line__price"><%= fmt.baht(m.price) %></span>
+            </div>
+            <% if (m.is_available) { %>
+              <input class="input qty" id="qty-<%= m.id %>" name="qty[<%= key %>]" type="number" inputmode="numeric"
+                     min="0" max="<%= maxQty %>" value="<%= h.nested(values, 'qty', key, 0) %>"
+                     aria-describedby="err-<%= m.id %>" <%- err ? 'aria-invalid="true"' : '' %>>
+            <% } else { %>
+              <span class="chip chip--danger">หมด</span>
+            <% } %>
+          </div>
+          <% if (err) { %><p class="field__error" id="err-<%= m.id %>"><%= err %></p><% } %>
+        </div>
+      <% }) %>
+    </section>
+  <% }) %>
+
+  <div class="field mt-lg">
+    <label for="note">หมายเหตุถึงร้าน <span class="opt">(ไม่บังคับ)</span></label>
+    <input id="note" name="note" class="input" maxlength="200" value="<%= h.val(values, 'note') %>" placeholder="เช่น มารับ 13:30">
+    <p class="field__error"><%= h.err(errors, 'note') %></p>
+  </div>
+
+  <div class="form-actions">
+    <a class="btn btn--quiet" href="/app/menu">ดูเมนู</a>
+    <button class="btn btn--primary">ยืนยันการสั่ง</button>
+  </div>
+</form>

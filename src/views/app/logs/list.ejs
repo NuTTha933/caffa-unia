@@ -1,0 +1,99 @@
+<header class="page-head">
+  <h1>Log การใช้งาน</h1>
+  <p class="page-head__lead">
+    <% if (viewAll) { %>ทุกหมวด เก็บถาวรในฐานข้อมูล · ไม่บันทึกรหัสผ่าน Session ID หรือ Token
+    <% } else { %>สิทธิ์ของคุณดูได้เฉพาะหมวดงาน: <%= categories.map(c => fmt.LOG_CATEGORIES[c]).join(' · ') %><% } %>
+  </p>
+  <% if (viewAll) { %>
+    <div class="page-head__actions"><a class="btn" href="/app/logs/export.csv<%= fmt.qs(filters) %>">ส่งออก CSV ตามตัวกรอง</a></div>
+  <% } %>
+</header>
+
+<form method="get" class="filters" role="search">
+  <div class="field">
+    <label for="from">ตั้งแต่วันที่</label>
+    <input type="date" id="from" name="from" class="input" value="<%= filters.from %>">
+  </div>
+  <div class="field">
+    <label for="to">ถึงวันที่</label>
+    <input type="date" id="to" name="to" class="input" value="<%= filters.to %>">
+  </div>
+  <div class="field">
+    <label for="user_id">ผู้ใช้</label>
+    <select id="user_id" name="user_id" class="select">
+      <option value="">ทุกคน</option>
+      <% users.forEach(u => { %><option value="<%= u.id %>" <%= filters.user_id === u.id ? 'selected' : '' %>><%= u.username %></option><% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label for="category">หมวด</label>
+    <select id="category" name="category" class="select">
+      <option value="">ทุกหมวด</option>
+      <% categories.forEach(c => { %><option value="<%= c %>" <%= filters.category === c ? 'selected' : '' %>><%= fmt.LOG_CATEGORIES[c] %></option><% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label for="action">เหตุการณ์</label>
+    <input id="action" name="action" class="input mono" list="action-list" value="<%= filters.action %>" placeholder="เช่น acl.grant">
+    <datalist id="action-list"><% actions.forEach(a => { %><option value="<%= a %>"><% }) %></datalist>
+  </div>
+  <div class="field">
+    <label for="result">ผลลัพธ์</label>
+    <select id="result" name="result" class="select">
+      <option value="">ทั้งหมด</option>
+      <% Object.entries(fmt.LOG_RESULTS).forEach(([k, s]) => { %><option value="<%= k %>" <%= filters.result === k ? 'selected' : '' %>><%= s.label %></option><% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label for="username">ชื่อบัญชี</label>
+    <input id="username" name="username" class="input" autocomplete="off" value="<%= filters.username %>" placeholder="รวมที่เข้าระบบไม่สำเร็จ">
+  </div>
+  <div class="field">
+    <label for="q">ค้นหาในรายละเอียด</label>
+    <input id="q" name="q" class="input" value="<%= filters.q %>" placeholder="path, รหัสรายการ, ชื่อไฟล์">
+  </div>
+  <div class="filters__actions span-all">
+    <button class="btn btn--primary">กรอง</button>
+    <a class="btn btn--quiet" href="/app/logs">ล้าง</a>
+  </div>
+</form>
+
+<p class="quick-filters">
+  <span>ตัวกรองด่วน</span>
+  <% if (viewAll) { %>
+    <a href="?category=admin&action=role.create">การเพิ่ม Role</a>
+    <a href="?category=admin&action=acl.">การเปลี่ยนสิทธิ์ ACL</a>
+    <a href="?category=admin&action=permission.">การจัดการ Permission</a>
+    <a href="?category=admin&action=user.role_change">การเปลี่ยน Role ผู้ใช้</a>
+    <a href="?result=denied">การเข้าถึงที่ถูกปฏิเสธ</a>
+    <a href="?category=auth&action=login_failed">เข้าสู่ระบบล้มเหลว</a>
+  <% } %>
+  <a href="?category=file&action=file.upload">การอัปโหลดไฟล์</a>
+  <a href="?category=file&action=file.upload_rejected">ไฟล์ที่ถูกปฏิเสธ</a>
+  <a href="?category=order&action=order.accept">การรับออเดอร์</a>
+  <a href="?category=order&action=order.reject">สลิปไม่ผ่าน</a>
+</p>
+
+<% if (result.rows.length) { %>
+  <table class="ledger ledger--stack">
+    <thead><tr><th>วันเวลา</th><th>ผู้กระทำ</th><th>เหตุการณ์</th><th>รายการที่เกี่ยวข้อง</th><th>ผล</th><th>รายละเอียด</th></tr></thead>
+    <tbody>
+    <% result.rows.forEach(l => { %>
+      <tr>
+        <td data-label="วันเวลา" class="small"><%= fmt.dateTime(l.created_at, true) %></td>
+        <td data-label="ผู้กระทำ"><span class="title"><%= l.username || '(ไม่ระบุ)' %></span><span class="sub"><%= l.role_code || (l.user_id ? '' : 'ยังไม่เข้าสู่ระบบ') %></span></td>
+        <td data-label="เหตุการณ์"><span class="mono small"><%= l.action %></span><span class="sub"><%= fmt.LOG_CATEGORIES[l.category] || l.category %></span></td>
+        <td data-label="รายการ" class="small">
+          <% if (l.resource_type) { %><span class="tag"><%= l.resource_type %> #<%= l.resource_id %></span><% } %>
+          <span class="sub"><%= l.method %> <%= l.path %></span>
+        </td>
+        <td data-label="ผล"><%- h.resultChip(l.result) %></td>
+        <td data-label="รายละเอียด"><div class="log-details"><%- h.logDetails(l.details) %><div><span class="k">ip</span> <%= l.ip %></div></div></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+  <%- include('../../partials/pagination', { page: result.page, pages: result.pages, total: result.total }) %>
+<% } else { %>
+  <div class="empty"><strong>ไม่พบ Log ตามเงื่อนไข</strong><a href="/app/logs">ล้างตัวกรอง</a></div>
+<% } %>

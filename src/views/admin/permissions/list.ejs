@@ -1,0 +1,35 @@
+<header class="page-head">
+  <h1>Permission</h1>
+  <p class="page-head__lead">Permission มีผลเมื่อเชื่อมกับฟังก์ชันที่ระบบรองรับ และถูกกำหนดให้ Role ในหน้า ACL</p>
+  <div class="page-head__actions">
+    <% if (can('admin.acl')) { %><a class="btn" href="/admin/acl">ไปหน้า ACL</a><% } %>
+    <a class="btn btn--primary" href="/admin/permissions/new">เพิ่ม Permission</a>
+  </div>
+</header>
+
+<table class="ledger ledger--stack">
+  <thead><tr><th>Permission</th><th>เปิดใช้ฟังก์ชัน</th><th>กำหนดให้ Role</th><th><span class="sr-only">จัดการ</span></th></tr></thead>
+  <tbody>
+  <% permissions.forEach(p => { %>
+    <tr>
+      <td data-label="Permission"><span class="mono title"><%= p.code %></span><span class="sub"><%= p.name %></span></td>
+      <td data-label="ฟังก์ชัน">
+        <% if (p.functions.length) { %>
+          <div class="tag-list"><% p.functions.forEach(f => { %><span class="tag" title="<%= f.name %>"><%= f.code %></span><% }) %></div>
+        <% } else { %>
+          <span class="chip chip--warn">ยังไม่เชื่อมกับฟังก์ชัน — ยังไม่เปิดสิทธิ์ใด</span>
+        <% } %>
+      </td>
+      <td data-label="Role" class="small"><%= p.role_names || '—' %></td>
+      <td class="actions">
+        <a class="btn btn--sm" href="/admin/permissions/<%= p.id %>/edit">แก้ไข</a>
+        <form method="post" action="/admin/permissions/<%= p.id %>/delete" class="inline-form" data-confirm="ลบ Permission <%= p.code %>? ทุก Role ที่ได้รับจะถูกยกเลิกสิทธิ์นี้ทันที">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn--sm btn--danger" aria-label="ลบ <%= p.code %>">ลบ</button>
+        </form>
+      </td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+<p class="small muted mt-sm">Admin ได้ทุกสิทธิ์อยู่แล้วโดยไม่ขึ้นกับตารางนี้</p>

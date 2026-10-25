@@ -1,0 +1,14 @@
+node_modules/
+.env
+storage/uploads/*
+!storage/uploads/.gitkeep
+*.log
+.DS_Store
+storage/test-uploads/
+
+# Cloudflare Tunnel (โปรแกรมบนเครื่อง ไม่ใช่ส่วนของเว็บ)
+cloudflared*.exe
+config.yml
+
+# สคริปต์อัปโหลดขึ้น GitHub (ใช้บนเครื่องเท่านั้น)
+push-to-github.bat

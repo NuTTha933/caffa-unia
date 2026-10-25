@@ -1,0 +1,49 @@
+<% const isEdit = !!item; %>
+<header class="page-head">
+  <p class="page-head__crumb"><a href="/app/menu">เมนู</a><% if (isEdit) { %> / <a href="/app/menu/<%= item.id %>"><%= item.name %></a><% } %></p>
+  <h1><%= isEdit ? `แก้ไข ${item.name}` : 'เพิ่มเมนู' %></h1>
+  <% if (isEdit) { %><p class="page-head__lead">การเปลี่ยนราคามีผลกับออเดอร์ใหม่เท่านั้น ออเดอร์เดิมเก็บราคา ณ เวลาที่สั่งไว้แล้ว</p><% } %>
+</header>
+
+<form method="post" action="<%= isEdit ? `/app/menu/${item.id}/edit` : '/app/menu' %>" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="form-grid form-grid--2">
+    <div class="field">
+      <label for="code" class="req">รหัสเมนู</label>
+      <input id="code" name="code" class="input mono" maxlength="20" value="<%= h.val(values, 'code') %>" placeholder="CF-08" required
+             aria-describedby="code-msg" <%- h.err(errors, 'code') ? 'aria-invalid="true"' : '' %>>
+      <% if (h.err(errors, 'code')) { %><p class="field__error" id="code-msg"><%= h.err(errors, 'code') %></p><% } else { %><p class="field__help" id="code-msg">A-Z, 0-9 และ - เช่น CF-08</p><% } %>
+    </div>
+    <div class="field">
+      <label for="name" class="req">ชื่อเมนู</label>
+      <input id="name" name="name" class="input" maxlength="120" value="<%= h.val(values, 'name') %>" required
+             aria-describedby="name-msg" <%- h.err(errors, 'name') ? 'aria-invalid="true"' : '' %>>
+      <p class="field__error" id="name-msg"><%= h.err(errors, 'name') %></p>
+    </div>
+    <div class="field">
+      <label for="category_id" class="req">หมวด</label>
+      <select id="category_id" name="category_id" class="select" aria-describedby="cat-msg" <%- h.err(errors, 'category_id') ? 'aria-invalid="true"' : '' %>>
+        <% categories.forEach(c => { %><option value="<%= c.id %>" <%= String(h.val(values, 'category_id')) === String(c.id) ? 'selected' : '' %>><%= c.name %></option><% }) %>
+      </select>
+      <p class="field__error" id="cat-msg"><%= h.err(errors, 'category_id') %></p>
+    </div>
+    <div class="field">
+      <label for="price" class="req">ราคา (บาท)</label>
+      <input id="price" name="price" class="input num" inputmode="decimal" maxlength="8" value="<%= h.val(values, 'price') %>" placeholder="75" required
+             aria-describedby="price-msg" <%- h.err(errors, 'price') ? 'aria-invalid="true"' : '' %>>
+      <p class="<%= h.err(errors, 'price') ? 'field__error' : 'field__help' %>" id="price-msg"><%= h.err(errors, 'price') || '1–9,999 บาท ทศนิยมได้ 2 ตำแหน่ง' %></p>
+    </div>
+    <div class="field span-all">
+      <label for="description">คำอธิบาย <span class="opt">(ไม่บังคับ)</span></label>
+      <textarea id="description" name="description" class="textarea" maxlength="500" rows="3" aria-describedby="desc-msg"><%= h.val(values, 'description') %></textarea>
+      <p class="field__error" id="desc-msg"><%= h.err(errors, 'description') %></p>
+    </div>
+    <div class="span-all">
+      <label class="check"><input type="checkbox" name="is_available" value="1" <%= h.val(values, 'is_available', true) ? 'checked' : '' %>> เปิดขาย (ลูกค้าสั่งได้)</label>
+    </div>
+  </div>
+  <div class="form-actions">
+    <a class="btn btn--quiet" href="<%= isEdit ? `/app/menu/${item.id}` : '/app/menu' %>">ยกเลิก</a>
+    <button class="btn btn--primary"><%= isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มเมนู' %></button>
+  </div>
+</form>

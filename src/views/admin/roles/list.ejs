@@ -1,0 +1,29 @@
+<header class="page-head">
+  <h1>บทบาท (Role)</h1>
+  <p class="page-head__lead">Role ที่ยังมีผู้ใช้หรือเป็น Role หลักของระบบจะลบไม่ได้ — Server เป็นผู้ตรวจ ไม่ได้พึ่งการซ่อนปุ่ม</p>
+  <div class="page-head__actions"><a class="btn btn--primary" href="/admin/roles/new">เพิ่ม Role</a></div>
+</header>
+
+<table class="ledger ledger--stack">
+  <thead><tr><th>Role</th><th>หน้าที่</th><th class="r">ผู้ใช้</th><th class="r">Permission</th><th><span class="sr-only">จัดการ</span></th></tr></thead>
+  <tbody>
+  <% roles.forEach(r => { %>
+    <tr>
+      <td data-label="Role">
+        <a class="title" href="/admin/roles/<%= r.id %>"><%= r.name %></a>
+        <span class="sub"><span class="mono"><%= r.code %></span><%= r.is_admin ? ' · ทุกสิทธิ์อัตโนมัติ' : '' %><%= r.is_system ? ' · Role หลัก' : '' %></span>
+      </td>
+      <td data-label="หน้าที่" class="small"><%= r.description || '—' %></td>
+      <td data-label="ผู้ใช้" class="r"><%= r.user_count %></td>
+      <td data-label="Permission" class="r"><%= r.is_admin ? 'ทั้งหมด' : r.permission_count %></td>
+      <td class="actions">
+        <a class="btn btn--sm" href="/admin/roles/<%= r.id %>/edit">แก้ไข</a>
+        <form method="post" action="/admin/roles/<%= r.id %>/delete" class="inline-form" data-confirm="ลบ Role <%= r.name %>?">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn--sm btn--danger" aria-label="ลบ Role <%= r.name %>">ลบ</button>
+        </form>
+      </td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>

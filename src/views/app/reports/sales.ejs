@@ -1,0 +1,50 @@
+<%
+  const r = report;
+  const statusN = Object.fromEntries(r.byStatus.map(s => [s.status, s.n]));
+%>
+<header class="page-head">
+  <h1>รายงานยอดขาย</h1>
+  <p class="page-head__lead">นับเฉพาะออเดอร์ที่ร้านรับเงินแล้ว (รอชง · กำลังชง · พร้อมรับ · รับแล้ว) · คำนวณสดจากฐานข้อมูล</p>
+</header>
+
+<div class="figures">
+  <div class="figure"><p class="figure__label">ยอดขายวันนี้</p><p class="figure__value"><%= fmt.baht(r.today.revenue) %> <small>บาท</small></p><p class="figure__note"><%= r.today.orders %> ออเดอร์ · <%= r.today.cups %> แก้ว/ชิ้น</p></div>
+  <div class="figure"><p class="figure__label">ยอดขาย 7 วัน</p><p class="figure__value"><%= fmt.baht(r.week.revenue) %> <small>บาท</small></p><p class="figure__note"><%= r.week.orders %> ออเดอร์</p></div>
+  <div class="figure"><p class="figure__label">เฉลี่ยต่อออเดอร์ (7 วัน)</p><p class="figure__value"><%= fmt.baht(r.week.avg_ticket) %> <small>บาท</small></p></div>
+  <div class="figure"><p class="figure__label">เวลาชงเฉลี่ย (7 วัน)</p><p class="figure__value"><%= r.review.avg_brew_min %> <small>นาที</small></p></div>
+</div>
+
+<div class="split section">
+  <section aria-labelledby="daily-title">
+    <div class="section__head"><h2 id="daily-title">ยอดขายรายวัน 7 วันล่าสุด</h2></div>
+    <table class="ledger">
+      <thead><tr><th>วัน</th><th class="r">ออเดอร์</th><th class="r">ยอดขาย (บาท)</th></tr></thead>
+      <tbody><% r.daily.forEach(d => { %><tr><td><%= fmt.date(d.day) %></td><td class="r"><%= d.orders %></td><td class="r"><%= fmt.baht(d.revenue) %></td></tr><% }) %></tbody>
+    </table>
+  </section>
+
+  <section aria-labelledby="status-title">
+    <div class="section__head"><h2 id="status-title">สถานะออเดอร์ 7 วัน</h2></div>
+    <table class="ledger">
+      <tbody>
+      <% ['pending', 'accepted', 'brewing', 'ready', 'completed', 'rejected', 'cancelled'].forEach(s => { %>
+        <tr><td><%- h.orderChip(s) %></td><td class="r"><%= statusN[s] || 0 %></td></tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<section class="section" aria-labelledby="top-title">
+  <div class="section__head"><h2 id="top-title">เมนูขายดี 30 วัน</h2></div>
+  <% if (r.topItems.length) { %>
+    <table class="ledger">
+      <thead><tr><th>เมนู</th><th class="r">จำนวน (แก้ว/ชิ้น)</th><th class="r">ยอดขาย (บาท)</th></tr></thead>
+      <tbody>
+      <% r.topItems.forEach(t => { %>
+        <tr><td><%= t.item_name %> <span class="sub mono"><%= t.code %></span></td><td class="r"><%= t.cups %></td><td class="r"><%= fmt.baht(t.revenue) %></td></tr>
+      <% }) %>
+      </tbody>
+    </table>
+  <% } else { %><p class="muted">ยังไม่มียอดขายในช่วงนี้</p><% } %>
+</section>

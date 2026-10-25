@@ -1,0 +1,135 @@
+<%
+  const firstName = String(currentUser.fullName || '').split(/\s+/)[0];
+%>
+<header class="page-head">
+  <h1>สวัสดี คุณ<%= firstName %></h1>
+  <p class="page-head__lead">
+    <% if (can('order.review')) { %>สลิปที่รอตรวจและยอดขายวันนี้อยู่ด้านล่าง
+    <% } else if (can('order.view_queue')) { %>ออเดอร์ที่ชำระแล้วรอคุณอยู่ที่คิวบาร์
+    <% } else if (can('order.create')) { %>สั่งล่วงหน้า แนบสลิป แล้วมารับที่บาร์
+    <% } else { %>บัญชีของคุณเข้าถึงได้ตามสิทธิ์ที่แสดงด้านล่าง<% } %>
+  </p>
+  <div class="page-head__actions">
+    <% if (can('order.create')) { %><a class="btn btn--primary" href="/app/orders/new">สั่งเครื่องดื่ม</a><% } %>
+    <% if (can('order.view_queue')) { %><a class="btn btn--primary" href="/app/queue">เปิดคิวบาร์</a><% } %>
+    <% if (can('order.review')) { %><a class="btn btn--primary" href="/app/orders?status=pending">ตรวจสลิป</a><% } %>
+  </div>
+</header>
+
+<% if (today) { %>
+<section aria-labelledby="today-title">
+  <h2 id="today-title" class="sr-only">ภาพรวมวันนี้</h2>
+  <div class="figures">
+    <div class="figure">
+      <p class="figure__label">รอตรวจสลิป</p>
+      <p class="figure__value"><a href="/app/orders?status=pending"><%= today.pending %></a> <small>ออเดอร์</small></p>
+    </div>
+    <div class="figure">
+      <p class="figure__label">ชำระแล้ววันนี้</p>
+      <p class="figure__value"><%= today.paid %> <small>ออเดอร์</small></p>
+    </div>
+    <div class="figure">
+      <p class="figure__label">ยอดขายวันนี้</p>
+      <p class="figure__value"><%= fmt.baht(today.revenue) %> <small>บาท</small></p>
+    </div>
+    <div class="figure">
+      <p class="figure__label">สลิปไม่ผ่านวันนี้</p>
+      <p class="figure__value"><%= today.rejected %> <small>ออเดอร์</small></p>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<% if (active) { %>
+<section class="section" aria-labelledby="active-title">
+  <div class="now-card">
+    <div class="now-card__top">
+      <h2 id="active-title">ออเดอร์ <span class="order-no"><%= fmt.orderNo(active.id) %></span></h2>
+      <%- h.orderChip(active.status) %>
+    </div>
+    <ol class="steps" aria-label="ความคืบหน้าของออเดอร์">
+      <% h.steps(active.status).forEach((s, i) => { %>
+        <li class="is-<%= s.state %>"<%- s.state === 'current' ? ' aria-current="step"' : '' %>><span class="n">0<%= i + 1 %></span><%= s.label %></li>
+      <% }) %>
+    </ol>
+    <p class="mb-0"><%= active.summary %> · <strong class="num"><%= fmt.baht(active.total_amount) %> บาท</strong></p>
+    <% if (active.status === 'pending' && !active.slip_count) { %>
+      <p class="mt-sm mb-0"><strong>ยังไม่ได้แนบสลิป</strong> — ร้านจะเริ่มชงหลังตรวจสลิปแล้ว</p>
+    <% } %>
+    <div class="action-row mt-sm">
+      <a class="btn" href="/app/orders/<%= active.id %>"><%= active.status === 'pending' && !active.slip_count ? 'แนบสลิป' : 'ดูรายละเอียด' %></a>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<% if (review.length) { %>
+<section class="section" aria-labelledby="review-title">
+  <div class="section__head"><h2 id="review-title">สลิปรอตรวจ</h2><a class="small" href="/app/orders?status=pending">ดูทั้งหมด</a></div>
+  <table class="ledger ledger--stack">
+    <thead><tr><th>ออเดอร์</th><th>ลูกค้า</th><th>รายการ</th><th class="r">ยอด</th><th>สลิป</th></tr></thead>
+    <tbody>
+    <% review.forEach(o => { %>
+      <tr>
+        <td data-label="ออเดอร์"><a class="order-no" href="/app/orders/<%= o.id %>"><%= fmt.orderNo(o.id) %></a><span class="sub"><%= fmt.ago(o.created_at) %></span></td>
+        <td data-label="ลูกค้า"><%= o.customer_name %></td>
+        <td data-label="รายการ"><%= o.summary %></td>
+        <td data-label="ยอด" class="r nowrap"><%= fmt.baht(o.total_amount) %> บาท</td>
+        <td data-label="สลิป"><%= o.slip_count ? 'แนบแล้ว' : 'ยังไม่แนบ' %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+</section>
+<% } else if (can('order.review')) { %>
+<section class="section"><div class="section__head"><h2>สลิปรอตรวจ</h2></div><p class="muted">ไม่มีสลิปรอตรวจตอนนี้</p></section>
+<% } %>
+
+<% if (queue) { %>
+<section class="section" aria-labelledby="queue-title">
+  <div class="section__head"><h2 id="queue-title">คิวบาร์ตอนนี้</h2><a class="small" href="/app/queue">เปิดคิวบาร์</a></div>
+  <div class="figures">
+    <div class="figure"><p class="figure__label">รอชง</p><p class="figure__value"><%= queue.accepted %></p></div>
+    <div class="figure"><p class="figure__label">กำลังชง</p><p class="figure__value"><%= queue.brewing %></p></div>
+    <div class="figure"><p class="figure__label">พร้อมรับ</p><p class="figure__value"><%= queue.ready %></p></div>
+    <div class="figure"><p class="figure__label">คิวถัดไป</p><p class="figure__value small"><%= queue.next.length ? queue.next.map(o => fmt.orderNo(o.id)).join(' · ') : '—' %></p></div>
+  </div>
+</section>
+<% } %>
+
+<div class="split section">
+  <% if (can('order.view_own')) { %>
+  <section aria-labelledby="mine-title">
+    <div class="section__head"><h2 id="mine-title">ออเดอร์ล่าสุดของฉัน</h2><a class="small" href="/app/orders?mine=1">ดูทั้งหมด</a></div>
+    <% if (mine.length) { %>
+      <table class="ledger ledger--stack">
+        <thead><tr><th>ออเดอร์</th><th>รายการ</th><th class="r">ยอด</th><th>สถานะ</th></tr></thead>
+        <tbody>
+        <% mine.forEach(o => { %>
+          <tr>
+            <td data-label="ออเดอร์"><a class="order-no" href="/app/orders/<%= o.id %>"><%= fmt.orderNo(o.id) %></a><span class="sub"><%= fmt.dateTime(o.created_at) %></span></td>
+            <td data-label="รายการ"><%= o.summary %></td>
+            <td data-label="ยอด" class="r nowrap"><%= fmt.baht(o.total_amount) %></td>
+            <td data-label="สถานะ"><%- h.orderChip(o.status) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <div class="empty"><strong>ยังไม่มีออเดอร์</strong>เริ่มจากเลือกเมนูที่ชอบ แล้วแนบสลิปหลังโอนเงิน<% if (can('order.create')) { %> <a href="/app/orders/new">สั่งเครื่องดื่ม</a><% } %></div>
+    <% } %>
+  </section>
+  <% } %>
+
+  <aside class="perm-box" aria-labelledby="perm-title">
+    <div class="section__head"><h2 id="perm-title">สิทธิ์ของบัญชีนี้</h2><span class="small"><%= currentUser.roleName %></span></div>
+    <% if (currentUser.isAdmin) { %>
+      <p>บทบาทผู้ดูแลระบบได้ทุกสิทธิ์โดยอัตโนมัติ รวมถึงฟังก์ชันที่เพิ่มภายหลัง</p>
+    <% } else if (myPermissions.length) { %>
+      <p>อ่านจากฐานข้อมูลทุกครั้งที่โหลดหน้า Admin เปลี่ยนแล้วมีผลทันที</p>
+      <div class="tag-list"><% myPermissions.forEach(p => { %><span class="tag"><%= p %></span><% }) %></div>
+    <% } else { %>
+      <p>บทบาทนี้ยังไม่ได้รับ Permission ใด ติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์</p>
+    <% } %>
+  </aside>
+</div>

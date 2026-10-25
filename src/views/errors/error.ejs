@@ -1,0 +1,20 @@
+<% if (!currentUser) { %><main class="main" id="main"><% } %>
+<div class="error-page">
+  <p class="code"><%= status %></p>
+  <h1><%= title %></h1>
+  <p><%= message %></p>
+  <% if (status === 403) { %>
+    <p class="muted small">การเข้าถึงครั้งนี้ถูกบันทึกไว้ใน Log แล้ว หากต้องใช้ฟังก์ชันนี้ ให้ติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์</p>
+    <% if (required && required.length) { %>
+      <p class="muted small">ฟังก์ชันที่ต้องมีสิทธิ์: <span class="tag-list tag-list--inline"><% required.forEach(c => { %><span class="tag"><%= c %></span><% }) %></span></p>
+    <% } %>
+  <% } %>
+  <div class="action-row mt-lg">
+    <% if (currentUser) { %>
+      <a href="/app" class="btn btn--primary">กลับหน้าหลัก</a>
+    <% } else { %>
+      <a href="/login" class="btn btn--primary">ไปหน้าเข้าสู่ระบบ</a>
+    <% } %>
+  </div>
+</div>
+<% if (!currentUser) { %></main><% } %>

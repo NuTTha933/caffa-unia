@@ -1,0 +1,6 @@
+<% (flash || []).forEach(f => { const t = f.type === 'success' ? 'success' : f.type === 'danger' ? 'danger' : 'info'; %>
+  <div class="notice notice--<%= t %>" role="<%= t === 'danger' ? 'alert' : 'status' %>">
+    <p><%= f.message %></p>
+    <button type="button" class="notice__close" data-dismiss aria-label="ปิดข้อความ">×</button>
+  </div>
+<% }) %>

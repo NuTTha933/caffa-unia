@@ -1,0 +1,40 @@
+<header class="page-head">
+  <h1>ผู้ใช้</h1>
+  <p class="page-head__lead"><%= users.length %> บัญชี · เปลี่ยน Role แล้วมีผลทันทีใน Request ถัดไป</p>
+  <div class="page-head__actions"><a class="btn btn--primary" href="/admin/users/new">เพิ่มผู้ใช้</a></div>
+</header>
+
+<form method="get" class="filters" role="search">
+  <div class="field span-2"><label for="q">ค้นหา</label><input id="q" name="q" type="search" class="input" placeholder="ชื่อผู้ใช้ ชื่อ หรืออีเมล" value="<%= filters.q %>"></div>
+  <div class="field"><label for="role_id">บทบาท</label>
+    <select id="role_id" name="role_id" class="select"><option value="">ทุกบทบาท</option>
+      <% roles.forEach(r => { %><option value="<%= r.id %>" <%= filters.role_id === r.id ? 'selected' : '' %>><%= r.name %></option><% }) %>
+    </select></div>
+  <div class="field"><label for="status">สถานะ</label>
+    <select id="status" name="status" class="select"><option value="">ทั้งหมด</option><option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>ใช้งาน</option><option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>ปิดใช้งาน</option></select></div>
+  <div class="filters__actions span-all"><button class="btn btn--primary">ค้นหา</button><% if (filters.q || filters.role_id || filters.status) { %><a class="btn btn--quiet" href="/admin/users">ล้าง</a><% } %></div>
+</form>
+
+<table class="ledger ledger--stack">
+  <thead><tr><th>ผู้ใช้</th><th>บทบาท</th><th>เบอร์โทร</th><th>สถานะ</th><th>เข้าสู่ระบบล่าสุด</th><th><span class="sr-only">จัดการ</span></th></tr></thead>
+  <tbody>
+  <% users.forEach(u => { %>
+    <tr class="<%= u.is_active ? '' : 'is-muted' %>">
+      <td data-label="ผู้ใช้"><span class="title"><%= u.full_name %></span><span class="sub"><span class="mono"><%= u.username %></span><%= u.email ? ` · ${u.email}` : '' %></span></td>
+      <td data-label="บทบาท"><%= u.role_name %><span class="sub mono"><%= u.role_code %></span></td>
+      <td data-label="เบอร์โทร" class="nowrap"><%= u.phone || '—' %></td>
+      <td data-label="สถานะ"><%- u.is_active ? '<span class="chip chip--ok">ใช้งาน</span>' : '<span class="chip chip--done chip--s-cancelled">ปิดใช้งาน</span>' %></td>
+      <td data-label="ล่าสุด" class="small nowrap"><%= fmt.dateTime(u.last_login_at) %></td>
+      <td class="actions">
+        <a class="btn btn--sm" href="/admin/users/<%= u.id %>/edit">แก้ไข / เปลี่ยน Role</a>
+        <% if (u.id !== currentUser.id) { %>
+          <form method="post" action="/admin/users/<%= u.id %>/delete" class="inline-form" data-confirm="ลบผู้ใช้ <%= u.username %>? (ผู้ใช้ที่มีประวัติออเดอร์จะลบไม่ได้ ให้ปิดใช้งานแทน)">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn--sm btn--danger" aria-label="ลบผู้ใช้ <%= u.username %>">ลบ</button>
+          </form>
+        <% } %>
+      </td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>

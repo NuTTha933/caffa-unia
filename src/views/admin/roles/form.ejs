@@ -1,0 +1,46 @@
+<% const isEdit = !!role; %>
+<header class="page-head">
+  <p class="page-head__crumb"><a href="/admin/roles">บทบาท (Role)</a></p>
+  <h1><%= isEdit ? `แก้ไข Role ${role.name}` : 'เพิ่ม Role' %></h1>
+  <% if (!isEdit) { %><p class="page-head__lead">สร้างแล้วไปกำหนดสิทธิ์ต่อที่หน้า ACL และกำหนดให้ผู้ใช้ที่หน้าผู้ใช้</p><% } %>
+</header>
+
+<form method="post" action="<%= isEdit ? `/admin/roles/${role.id}/edit` : '/admin/roles' %>" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="form-grid form-grid--2">
+    <div class="field">
+      <label for="code" class="<%= isEdit ? '' : 'req' %>">รหัส Role</label>
+      <% if (isEdit) { %>
+        <input id="code" class="input mono" value="<%= role.code %>" disabled>
+        <p class="field__help">รหัส Role เปลี่ยนไม่ได้</p>
+      <% } else { %>
+        <input id="code" name="code" maxlength="50" class="input mono" value="<%= h.val(values, 'code') %>" placeholder="เช่น auditor" required aria-describedby="code-msg" <%- h.err(errors, 'code') ? 'aria-invalid="true"' : '' %>>
+        <p class="<%= h.err(errors, 'code') ? 'field__error' : 'field__help' %>" id="code-msg"><%= h.err(errors, 'code') || 'a-z, 0-9 และ _ ขึ้นต้นด้วยตัวอักษร' %></p>
+      <% } %>
+    </div>
+    <div class="field">
+      <label for="name" class="req">ชื่อ Role</label>
+      <input id="name" name="name" maxlength="100" class="input" value="<%= h.val(values, 'name') %>" placeholder="เช่น ผู้ตรวจสอบบัญชี" required aria-describedby="name-msg" <%- h.err(errors, 'name') ? 'aria-invalid="true"' : '' %>>
+      <p class="field__error" id="name-msg"><%= h.err(errors, 'name') %></p>
+    </div>
+    <div class="field span-all">
+      <label for="description">หน้าที่ของ Role นี้ <span class="opt">(ไม่บังคับ)</span></label>
+      <textarea id="description" name="description" rows="2" maxlength="500" class="textarea" aria-describedby="desc-msg"><%= h.val(values, 'description') %></textarea>
+      <p class="field__error" id="desc-msg"><%= h.err(errors, 'description') %></p>
+    </div>
+    <% if (!isEdit) { %>
+    <div class="field">
+      <label for="copy_from">คัดลอกสิทธิ์เริ่มต้นจาก Role</label>
+      <select id="copy_from" name="copy_from" class="select" aria-describedby="copy-msg">
+        <option value="">ไม่คัดลอก (เริ่มจากไม่มีสิทธิ์)</option>
+        <% roles.filter(r => !r.is_admin).forEach(r => { %><option value="<%= r.id %>" <%= String(h.val(values, 'copy_from')) === String(r.id) ? 'selected' : '' %>><%= r.name %></option><% }) %>
+      </select>
+      <p class="field__help" id="copy-msg">ปรับต่อได้ที่หน้า ACL</p>
+    </div>
+    <% } %>
+  </div>
+  <div class="form-actions">
+    <a href="/admin/roles" class="btn btn--quiet">ยกเลิก</a>
+    <button class="btn btn--primary"><%= isEdit ? 'บันทึก' : 'เพิ่ม Role' %></button>
+  </div>
+</form>

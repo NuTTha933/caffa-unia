@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="th">
+<head>
+<%- include('../partials/head') %>
+</head>
+<%
+  const isAdminArea = typeof area !== 'undefined' && area === 'admin';
+  const canAdmin = can('admin.users') || can('admin.roles') || can('admin.permissions') || can('admin.acl');
+  const link = (href, label, opts = {}) => ({
+    href, label, current: opts.current !== undefined ? opts.current : h.navActive(path, href, opts.exact),
+  });
+  let groups = [];
+  if (isAdminArea) {
+    const items = [link('/admin', 'ภาพรวม', { exact: true })];
+    if (can('admin.users')) items.push(link('/admin/users', 'ผู้ใช้'));
+    if (can('admin.roles')) items.push(link('/admin/roles', 'บทบาท (Role)'));
+    if (can('admin.permissions')) items.push(link('/admin/permissions', 'Permission'));
+    if (can('admin.acl')) items.push(link('/admin/acl', 'ACL: Role × Permission'));
+    if (can('admin.acl')) items.push(link('/admin/access-matrix', 'Access Matrix'));
+    groups.push({ label: 'ผู้ใช้และสิทธิ์', items });
+    if (can('log.view') || can('log.view_all')) groups.push({ label: 'ตรวจสอบ', items: [link('/app/logs', 'Log การใช้งาน')] });
+  } else {
+    const front = [link('/app', 'หน้าหลัก', { exact: true })];
+    if (can('menu.view')) front.push(link('/app/menu', 'เมนู'));
+    if (can('order.create')) front.push(link('/app/orders/new', 'สั่งเครื่องดื่ม', { exact: true }));
+    if (can('order.view_own') || can('order.view_queue') || can('order.view_all')) {
+      const staff = can('order.view_all') || can('order.view_queue');
+      front.push(link('/app/orders', staff ? 'ออเดอร์' : 'ออเดอร์ของฉัน', {
+        current: path.startsWith('/app/orders') && path !== '/app/orders/new',
+      }));
+    }
+    groups.push({ label: 'หน้าร้าน', items: front });
+    if (can('order.view_queue') || can('order.view_all')) {
+      groups.push({ label: 'บาร์', items: [link('/app/queue', 'คิวบาร์')] });
+    }
+    const back = [];
+    if (can('report.sales')) back.push(link('/app/reports', 'รายงานยอดขาย'));
+    if (can('log.view') || can('log.view_all')) back.push(link('/app/logs', 'Log การใช้งาน'));
+    if (back.length) groups.push({ label: 'หลังร้าน', items: back });
+  }
+%>
+<body class="<%= isAdminArea ? 'area-admin' : 'area-app' %>">
+<a class="skip-link" href="#main">ข้ามไปเนื้อหา</a>
+
+<header class="masthead">
+  <div class="masthead__row">
+    <a class="wordmark" href="<%= isAdminArea ? '/admin' : '/app' %>"><%- include('../partials/wordmark') %><%= appName %></a>
+    <p class="masthead__meta">
+      <%= fmt.longDate() %><br>
+      <strong><%= currentUser.fullName %></strong> · <%= currentUser.roleName %>
+    </p>
+    <button class="nav-toggle" type="button" aria-controls="rail" aria-expanded="false"><span class="nav-toggle__bars" aria-hidden="true"></span>เมนู</button>
+  </div>
+  <div class="masthead__rule" aria-hidden="true"></div>
+</header>
+<% if (isAdminArea) { %>
+  <div class="admin-band" role="note"><strong>ส่วนผู้ดูแลระบบ /admin</strong> <span>— การเปลี่ยนแปลงในส่วนนี้มีผลกับผู้ใช้ทุกคนทันทีและถูกบันทึก Log</span></div>
+<% } %>
+
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="เมนูหลัก">
+    <% groups.forEach(g => { %>
+      <div class="rail__group">
+        <span class="rail__label"><%= g.label %></span>
+        <ul class="rail__list">
+          <% g.items.forEach(i => { %>
+            <li><a class="rail__link" href="<%= i.href %>"<%- i.current ? ' aria-current="page"' : '' %>><%= i.label %></a></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% }) %>
+
+    <% if (isAdminArea) { %>
+      <a class="rail__exit rail__exit--back" href="/app">กลับหน้าร้าน</a>
+    <% } else if (canAdmin) { %>
+      <a class="rail__exit" href="/admin">ส่วนผู้ดูแลระบบ</a>
+    <% } %>
+
+    <div class="rail__user">
+      <div class="who"><%= currentUser.fullName %></div>
+      <div class="role"><%= currentUser.roleName %> · <span class="mono"><%= currentUser.username %></span></div>
+      <div class="actions">
+        <a href="/app/profile">ข้อมูลของฉัน</a>
+        <form method="post" action="/logout" class="inline-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="linkish">ออกจากระบบ</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main" id="main" tabindex="-1">
+    <%- include('../partials/flash') %>
+    <%- body %>
+  </main>
+</div>
+
+<footer class="foot">
+  <p><%= appName %> · ระบบจัดการร้านกาแฟ · Node.js, Express และ PostgreSQL · โครงงานรายวิชาพัฒนาเว็บแอปพลิเคชัน</p>
+</footer>
+<script src="/js/app.js"></script>
+</body>
+</html>

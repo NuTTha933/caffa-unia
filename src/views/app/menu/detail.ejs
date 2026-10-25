@@ -1,0 +1,73 @@
+<header class="page-head">
+  <p class="page-head__crumb"><a href="/app/menu">เมนู</a> / <%= item.category_name %></p>
+  <h1><%= item.name %></h1>
+  <div class="page-head__actions">
+    <% if (item.is_available && can('order.create')) { %><a class="btn btn--primary" href="/app/orders/new">สั่งเครื่องดื่ม</a><% } %>
+    <% if (can('menu.update')) { %><a class="btn" href="/app/menu/<%= item.id %>/edit">แก้ไข</a><% } %>
+  </div>
+</header>
+
+<div class="menu-hero">
+  <figure>
+    <% if (item.image_id) { %>
+      <img src="/app/files/<%= item.image_id %>" alt="ภาพเมนู <%= item.name %>" width="800" height="600" fetchpriority="high">
+    <% } else { %>
+      <div class="noimg">ยังไม่มีภาพเมนู<% if (can('menu.image')) { %> — อัปโหลดได้ด้านขวา<% } %></div>
+    <% } %>
+  </figure>
+
+  <div>
+    <p class="price-big"><%= fmt.baht(item.price) %> บาท</p>
+    <% if (item.description) { %><p class="mt-sm"><%= item.description %></p><% } %>
+    <dl class="kv mt-sm">
+      <dt>รหัสเมนู</dt><dd class="mono"><%= item.code %></dd>
+      <dt>หมวด</dt><dd><%= item.category_name %></dd>
+      <dt>สถานะ</dt><dd><%- item.is_available ? '<span class="chip chip--ok">เปิดขาย</span>' : h.availabilityChip(false) %></dd>
+      <dt>ขายแล้ว</dt><dd class="num"><%= stats.cups %> แก้ว/ชิ้น จาก <%= stats.orders %> ออเดอร์ที่ชำระแล้ว</dd>
+      <dt>แก้ไขล่าสุด</dt><dd><%= fmt.dateTime(item.updated_at) %></dd>
+    </dl>
+
+    <% if (can('menu.toggle')) { %>
+      <form method="post" action="/app/menu/<%= item.id %>/availability" class="action-row">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="available" value="<%= item.is_available ? '0' : '1' %>">
+        <button class="btn"><%= item.is_available ? 'ตั้งเป็น "หมด"' : 'เปิดขายอีกครั้ง' %></button>
+      </form>
+    <% } %>
+
+    <% if (can('menu.image')) { %>
+    <section class="panel mt-xl" aria-labelledby="img-title">
+      <h2 id="img-title">ภาพเมนู</h2>
+      <form method="post" action="/app/menu/<%= item.id %>/image?_csrf=<%= csrfToken %>" enctype="multipart/form-data" class="stack-sm">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="filepick field">
+          <label for="image"><%= item.image_id ? 'เปลี่ยนภาพ' : 'อัปโหลดภาพ' %></label>
+          <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="image-help">
+          <p class="field__help" id="image-help">รับเฉพาะ <%= imageRule %> · ระบบตรวจชนิดจากเนื้อไฟล์จริง</p>
+        </div>
+        <div class="action-row">
+          <button class="btn btn--primary">อัปโหลด</button>
+        </div>
+      </form>
+      <% if (item.image_id) { %>
+        <form method="post" action="/app/menu/<%= item.id %>/image/delete" class="mt-sm" data-confirm="ลบภาพของ <%= item.name %>?">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn--quiet">ลบภาพนี้</button>
+          <a class="small" href="/app/files/<%= item.image_id %>/download">ดาวน์โหลดภาพ</a>
+        </form>
+      <% } %>
+    </section>
+    <% } %>
+
+    <% if (can('menu.delete')) { %>
+    <section class="panel mt-xl" aria-labelledby="del-title">
+      <h2 id="del-title">ลบเมนู</h2>
+      <p class="small muted">ลบได้เฉพาะเมนูที่ยังไม่เคยถูกสั่ง เมนูที่มีประวัติยอดขายให้ตั้งเป็น "หมด" แทน</p>
+      <form method="post" action="/app/menu/<%= item.id %>/delete" data-confirm="ลบเมนู <%= item.code %> <%= item.name %> ถาวร?">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn--danger">ลบเมนูนี้</button>
+      </form>
+    </section>
+    <% } %>
+  </div>
+</div>

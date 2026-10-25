@@ -1,0 +1,48 @@
+<header class="page-head">
+  <h1>ACL: Role × Permission</h1>
+  <p class="page-head__lead">เลือกช่องเพื่อกำหนด Permission ให้ Role เอาออกเพื่อยกเลิก แล้วกดบันทึก — มีผลทันทีโดยไม่ต้องเริ่ม Server ใหม่</p>
+  <div class="page-head__actions"><a class="btn" href="/admin/access-matrix">ดู Access Matrix</a></div>
+</header>
+
+<form method="post" action="/admin/acl" id="acl-form">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="scroll-x" tabindex="0" role="region" aria-label="ตาราง ACL เลื่อนแนวนอนได้">
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th scope="col">Permission</th>
+          <% roles.forEach(r => { %>
+            <th scope="col" id="role-<%= r.id %>" class="<%= r.is_admin ? 'is-admin' : '' %>"><%= r.name %><span class="sub"><%= r.code %> · <%= r.user_count %> คน</span></th>
+          <% }) %>
+        </tr>
+      </thead>
+      <tbody>
+      <% groups.forEach(g => { %>
+        <tr class="group-row"><td colspan="<%= roles.length + 1 %>"><%= fmt.PERMISSION_GROUPS[g.key] || g.key %> <span class="mono muted">(<%= g.key %>.*)</span></td></tr>
+        <% g.items.forEach(p => { %>
+          <tr>
+            <th scope="row">
+              <span class="perm-code"><%= p.code %></span> <%= p.name %>
+              <span class="fn"><%= p.function_codes.length ? `เปิด: ${p.function_codes.join(', ')}` : 'ยังไม่เชื่อมกับฟังก์ชัน' %></span>
+            </th>
+            <% roles.forEach(r => { const key = `${r.id}:${p.id}`; const on = granted.has(key); %>
+              <td class="cell<%= r.is_admin ? ' is-admin' : '' %>">
+                <% if (r.is_admin) { %>
+                  <span class="muted small" title="Admin ได้ทุกสิทธิ์อัตโนมัติ">อัตโนมัติ</span>
+                <% } else { %>
+                  <input class="acl-check" type="checkbox" name="grant" value="<%= key %>" <%= on ? 'checked' : '' %> data-initial="<%= on ? '1' : '0' %>" aria-label="<%= r.name %>: <%= p.code %>">
+                <% } %>
+              </td>
+            <% }) %>
+          </tr>
+        <% }) %>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <div class="savebar">
+    <span class="savebar__state" id="acl-pending" aria-live="polite">ยังไม่มีการเปลี่ยนแปลง</span>
+    <button type="reset" class="btn btn--quiet">คืนค่าเดิม</button>
+    <button type="submit" class="btn btn--primary">บันทึกสิทธิ์</button>
+  </div>
+</form>

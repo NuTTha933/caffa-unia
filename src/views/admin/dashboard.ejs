@@ -1,0 +1,54 @@
+<header class="page-head">
+  <h1>ภาพรวมส่วนผู้ดูแลระบบ</h1>
+  <p class="page-head__lead">จัดการผู้ใช้ บทบาท Permission และ ACL ผ่านเว็บ ไม่ต้องแก้ Source Code หรือเริ่ม Server ใหม่</p>
+  <div class="page-head__actions">
+    <% if (can('admin.acl')) { %><a class="btn btn--primary" href="/admin/acl">แก้ไข ACL</a><% } %>
+  </div>
+</header>
+
+<div class="figures">
+  <% [
+    ['ผู้ใช้', counts.users, `ปิดใช้งาน ${counts.inactive_users} บัญชี`, '/admin/users', 'admin.users'],
+    ['บทบาท (Role)', counts.roles, 'รวมผู้ดูแลระบบ', '/admin/roles', 'admin.roles'],
+    ['Permission', counts.permissions, `เชื่อมได้กับ ${counts.functions} ฟังก์ชัน`, '/admin/permissions', 'admin.permissions'],
+    ['การกำหนดสิทธิ์ใน ACL', counts.grants, 'คู่ Role × Permission', '/admin/acl', 'admin.acl'],
+  ].forEach(([label, n, sub, href, fn]) => { %>
+    <div class="figure">
+      <p class="figure__label"><%= label %></p>
+      <p class="figure__value"><% if (can(fn)) { %><a href="<%= href %>"><%= n %></a><% } else { %><%= n %><% } %></p>
+      <p class="figure__note"><%= sub %></p>
+    </div>
+  <% }) %>
+</div>
+
+<div class="split section">
+  <section aria-labelledby="recent-title">
+    <div class="section__head"><h2 id="recent-title">กิจกรรมด้านสิทธิ์และความปลอดภัยล่าสุด</h2><a class="small" href="/app/logs">ดู Log ทั้งหมด</a></div>
+    <% if (recentAdmin.length) { %>
+      <table class="ledger ledger--stack">
+        <thead><tr><th>เวลา</th><th>เหตุการณ์</th><th>ผู้กระทำ</th><th>ผล</th></tr></thead>
+        <tbody>
+        <% recentAdmin.forEach(l => { %>
+          <tr>
+            <td data-label="เวลา" class="small nowrap"><%= fmt.dateTime(l.created_at) %></td>
+            <td data-label="เหตุการณ์"><span class="mono small"><%= l.action %></span><span class="sub"><%= l.resource_type ? `${l.resource_type} #${l.resource_id}` : l.path %></span></td>
+            <td data-label="ผู้กระทำ"><%= l.username || '(ไม่ระบุ)' %></td>
+            <td data-label="ผล"><%- h.resultChip(l.result) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } else { %><p class="muted">ยังไม่มีกิจกรรม</p><% } %>
+  </section>
+
+  <aside aria-labelledby="day-title">
+    <div class="section__head"><h2 id="day-title">24 ชั่วโมงที่ผ่านมา</h2></div>
+    <table class="ledger">
+      <tbody>
+        <tr><td>การเข้าถึงที่ถูกปฏิเสธ</td><td class="r"><a href="/app/logs?result=denied"><%= counts.denied_today %> ครั้ง</a></td></tr>
+        <tr><td>เข้าสู่ระบบล้มเหลว</td><td class="r"><a href="/app/logs?category=auth&action=login_failed"><%= counts.failed_logins_today %> ครั้ง</a></td></tr>
+      </tbody>
+    </table>
+    <p class="small muted mt-sm">ทุก Request ในส่วนนี้ผ่านลำดับ: เข้าสู่ระบบแล้ว → มีสิทธิ์งาน Admin อย่างน้อย 1 อย่าง → CSRF ถูกต้อง → มีสิทธิ์ของฟังก์ชันที่เรียก</p>
+  </aside>
+</div>

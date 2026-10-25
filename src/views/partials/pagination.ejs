@@ -1,0 +1,9 @@
+<div class="pager">
+  <span>ทั้งหมด <%= total.toLocaleString('th-TH') %> รายการ<% if (pages > 1) { %> · หน้า <%= page %> จาก <%= pages %><% } %></span>
+  <% if (pages > 1) { %>
+    <span class="pager__links">
+      <% if (page > 1) { %><a class="btn btn--sm" href="<%= fmt.qs(query, { page: page - 1 }) %>">← ก่อนหน้า</a><% } %>
+      <% if (page < pages) { %><a class="btn btn--sm" href="<%= fmt.qs(query, { page: page + 1 }) %>">ถัดไป →</a><% } %>
+    </span>
+  <% } %>
+</div>

@@ -1,0 +1,176 @@
+<%
+  const a = o.actions;
+  const isOwner = o.customer_id === currentUser.id;
+  const stopped = ['rejected', 'cancelled'].includes(o.status);
+  const slip = o.slips[0];
+%>
+<header class="page-head">
+  <p class="page-head__crumb"><a href="/app/orders"><%= can('order.view_all') || can('order.view_queue') ? 'ออเดอร์' : 'ออเดอร์ของฉัน' %></a></p>
+  <h1>ออเดอร์ <span class="order-no"><%= fmt.orderNo(o.id) %></span></h1>
+  <p class="page-head__lead"><%- h.orderChip(o.status) %> · สั่งเมื่อ <%= fmt.dateTime(o.created_at) %></p>
+  <div class="page-head__actions">
+    <% if (can('order.view_queue') && ['accepted', 'brewing', 'ready'].includes(o.status)) { %>
+      <a class="btn" href="/app/queue">กลับคิวบาร์</a>
+    <% } %>
+  </div>
+</header>
+
+<div class="detail-layout">
+  <div>
+    <% if (o.status === 'rejected') { %>
+      <div class="stopped" role="status">
+        <p><strong>สลิปไม่ผ่านการตรวจ</strong> — <%= o.review_note %></p>
+        <p class="small muted">ตรวจโดย <%= o.reviewer_name || '-' %> · <%= fmt.dateTime(o.reviewed_at) %><% if (isOwner) { %> · หากโอนแล้ว ติดต่อร้านพร้อมเลขออเดอร์นี้<% } %></p>
+      </div>
+    <% } else if (o.status === 'cancelled') { %>
+      <div class="stopped stopped--muted" role="status"><p><strong>ออเดอร์นี้ถูกยกเลิก</strong> โดยลูกค้าก่อนร้านตรวจสลิป</p></div>
+    <% } else { %>
+      <ol class="steps" aria-label="ความคืบหน้าของออเดอร์">
+        <% h.steps(o.status).forEach((s, i) => { %>
+          <li class="is-<%= s.state %>"<%- s.state === 'current' ? ' aria-current="step"' : '' %>><span class="n">0<%= i + 1 %></span><%= s.label %></li>
+        <% }) %>
+      </ol>
+    <% } %>
+
+    <section class="receipt" aria-labelledby="items-title">
+      <h2 id="items-title">รายการ</h2>
+      <ul class="receipt__lines">
+        <% o.items.forEach(i => { %>
+          <li>
+            <span class="qty">×<%= i.quantity %></span>
+            <span class="name"><%= i.item_name %><span class="opt"><%= fmt.baht(i.unit_price) %> บาท</span></span>
+            <span class="leader" aria-hidden="true"></span>
+            <span class="amt"><%= fmt.baht(i.line_total) %></span>
+          </li>
+        <% }) %>
+      </ul>
+      <div class="receipt__total"><span>รวม <%= o.cups %> รายการ</span><span><span class="amt"><%= fmt.baht(o.total_amount) %></span> บาท</span></div>
+    </section>
+
+    <dl class="kv mt-lg">
+      <% if (!isOwner) { %><dt>ลูกค้า</dt><dd><%= o.customer_name %> <span class="mono muted">(<%= o.customer_username %>)</span><%= o.customer_phone && (can('order.view_all') || can('order.view_queue')) ? ` · ${o.customer_phone}` : '' %></dd><% } %>
+      <dt>หมายเหตุ</dt><dd><%= o.note || '—' %></dd>
+      <dt>ตรวจสลิป</dt><dd><%= o.reviewed_at ? `${o.reviewer_name || '-'} · ${fmt.dateTime(o.reviewed_at)}` : 'ยังไม่ตรวจ' %></dd>
+      <dt>บาริสต้า</dt><dd><%= o.barista_name || '—' %></dd>
+    </dl>
+
+    <section class="section" aria-labelledby="hist-title">
+      <div class="section__head"><h2 id="hist-title">เส้นทางสถานะ</h2><span class="small">บันทึกทุกการเปลี่ยนแปลง</span></div>
+      <ol class="timeline">
+        <% o.history.forEach(hh => { %>
+          <li>
+            <time datetime="<%= new Date(hh.changed_at).toISOString() %>"><%= fmt.time(hh.changed_at) %></time>
+            <div><%- h.orderChip(hh.to_status) %> <%= hh.note || '' %> <span class="who">— <%= hh.changed_by_name || 'ระบบ' %> · <%= fmt.date(hh.changed_at) %></span></div>
+          </li>
+        <% }) %>
+      </ol>
+    </section>
+  </div>
+
+  <div>
+    <section class="panel" aria-labelledby="pay-title">
+      <h2 id="pay-title">การชำระเงิน</h2>
+
+      <% if (o.canSeeSlip && slip) { %>
+        <figure class="slip">
+          <% if (slip.mime_type.startsWith('image/')) { %>
+            <img src="/app/files/<%= slip.id %>" alt="สลิปโอนเงินของออเดอร์ <%= fmt.orderNo(o.id) %>" loading="lazy">
+          <% } else { %>
+            <div class="slip__pdf">สลิปเป็นไฟล์ PDF · <a href="/app/files/<%= slip.id %>" target="_blank" rel="noopener">เปิดดูในแท็บใหม่</a></div>
+          <% } %>
+          <figcaption>
+            <span><%= slip.original_name %> · <%= fmt.fileSize(slip.size_bytes) %></span>
+            <span><%= slip.uploader_name %> · <%= fmt.dateTime(slip.uploaded_at) %></span>
+          </figcaption>
+        </figure>
+        <div class="action-row">
+          <a class="btn btn--sm" href="/app/files/<%= slip.id %>/download">ดาวน์โหลดสลิป</a>
+          <% if (slip.canDelete) { %>
+            <form method="post" action="/app/files/<%= slip.id %>/delete" class="inline-form" data-confirm="ลบสลิปนี้? (แนบใหม่ได้ก่อนร้านตรวจ)">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn--sm btn--quiet">ลบสลิป</button>
+            </form>
+          <% } %>
+        </div>
+      <% } else if (!o.canSeeSlip) { %>
+        <p class="small muted"><%= o.slip_count ? 'มีสลิปแนบแล้ว — บัญชีของคุณไม่มีสิทธิ์เปิดดูสลิป' : 'ยังไม่มีสลิป' %></p>
+      <% } else if (!a.uploadSlip) { %>
+        <p class="small muted"><%= o.status === 'cancelled' ? 'ออเดอร์ถูกยกเลิก ไม่มีการชำระเงิน' : 'ยังไม่มีสลิปแนบ' %></p>
+      <% } %>
+
+      <% if (a.uploadSlip) { %>
+        <div class="pay-to<%= slip ? ' mt-lg' : '' %>">
+          <span class="muted">โอนเข้าพร้อมเพย์ <%= shop.name %></span>
+          <span class="mono"><%= shop.promptpay %></span>
+          <span class="amt"><%= fmt.baht(o.total_amount) %> บาท</span>
+        </div>
+        <form method="post" action="/app/orders/<%= o.id %>/slip?_csrf=<%= csrfToken %>" enctype="multipart/form-data" class="stack-sm">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="filepick field">
+            <label for="slip"><%= slip ? 'เปลี่ยนสลิป' : 'แนบสลิปโอนเงิน' %></label>
+            <input id="slip" name="slip" type="file" accept="image/jpeg,image/png,application/pdf" required aria-describedby="slip-help">
+            <p class="field__help" id="slip-help">รับเฉพาะ <%= slipRule %> · ระบบตรวจชนิดจากเนื้อไฟล์จริง ไม่ใช่นามสกุล</p>
+          </div>
+          <button class="btn btn--primary"><%= slip ? 'อัปโหลดสลิปใหม่' : 'อัปโหลดสลิป' %></button>
+        </form>
+      <% } %>
+    </section>
+
+    <% if (a.accept || a.reject) { %>
+    <section class="panel" aria-labelledby="review-title">
+      <h2 id="review-title">ตรวจสลิป</h2>
+      <p class="small">ยอดที่ต้องได้รับ <strong class="num"><%= fmt.baht(o.total_amount) %> บาท</strong> · ตรวจชื่อผู้รับและยอดเงินในสลิปให้ตรงก่อนรับออเดอร์</p>
+      <form method="post" action="/app/orders/<%= o.id %>/accept" class="action-row">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn--primary" <%- o.slip_count ? '' : 'disabled' %>>รับออเดอร์ — ส่งเข้าคิวบาร์</button>
+      </form>
+      <% if (!o.slip_count) { %><p class="small muted mt-sm">ยังรับไม่ได้: ลูกค้ายังไม่แนบสลิป (Server ตรวจซ้ำและปฏิเสธเช่นกัน)</p><% } %>
+      <details class="disclose">
+        <summary>สลิปไม่ผ่าน</summary>
+        <form method="post" action="/app/orders/<%= o.id %>/reject" class="stack-sm">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="field">
+            <label for="note" class="req">เหตุผล (ลูกค้าจะเห็นข้อความนี้)</label>
+            <textarea id="note" name="note" class="textarea" rows="2" maxlength="300" required placeholder="เช่น ยอดโอนไม่ตรงกับยอดออเดอร์"></textarea>
+          </div>
+          <button class="btn btn--danger">บันทึกว่าสลิปไม่ผ่าน</button>
+        </form>
+      </details>
+    </section>
+    <% } %>
+
+    <% if (a.brew || a.ready || a.complete) { %>
+    <section class="panel" aria-labelledby="bar-title">
+      <h2 id="bar-title">บาร์</h2>
+      <% if (a.brew) { %>
+        <form method="post" action="/app/orders/<%= o.id %>/brew"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn--primary">เริ่มชง</button></form>
+      <% } else if (a.ready) { %>
+        <form method="post" action="/app/orders/<%= o.id %>/ready"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn--primary">ชงเสร็จ — แจ้งพร้อมรับ</button></form>
+      <% } else if (a.complete) { %>
+        <form method="post" action="/app/orders/<%= o.id %>/complete"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn--primary">ส่งมอบให้ลูกค้าแล้ว</button></form>
+      <% } %>
+    </section>
+    <% } %>
+
+    <% if (a.cancel || a.delete) { %>
+    <section class="panel" aria-labelledby="more-title">
+      <h2 id="more-title">จัดการออเดอร์</h2>
+      <div class="action-row">
+        <% if (a.cancel) { %>
+          <form method="post" action="/app/orders/<%= o.id %>/cancel" data-confirm="ยกเลิกออเดอร์ <%= fmt.orderNo(o.id) %>?">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn">ยกเลิกออเดอร์</button>
+          </form>
+        <% } %>
+        <% if (a.delete) { %>
+          <form method="post" action="/app/orders/<%= o.id %>/delete" data-confirm="ลบออเดอร์ <%= fmt.orderNo(o.id) %> พร้อมสลิปถาวร? ย้อนกลับไม่ได้">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn--danger">ลบออเดอร์</button>
+          </form>
+        <% } %>
+      </div>
+      <% if (a.cancel) { %><p class="small muted mt-sm">ยกเลิกได้จนกว่าร้านจะตรวจสลิป</p><% } %>
+    </section>
+    <% } %>
+  </div>
+</div>

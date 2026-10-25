@@ -1,0 +1,56 @@
+<div class="door">
+  <section class="door__intro" aria-label="เกี่ยวกับร้าน">
+    <span class="wordmark"><%- include('../partials/wordmark') %><%= appName %></span>
+    <p class="tagline">สั่งก่อน โอนก่อน แล้วมารับที่บาร์ ไม่ต้องต่อคิว</p>
+    <ol class="door__flow">
+      <li><div><strong>เลือกเมนูและระดับความหวาน</strong>ระบบคิดราคาจากเมนูปัจจุบันของร้าน</div></li>
+      <li><div><strong>โอนเงินแล้วแนบสลิป</strong>รับไฟล์ JPG, PNG หรือ PDF</div></li>
+      <li><div><strong>ร้านตรวจสลิป</strong>ผ่านแล้วออเดอร์เข้าคิวบาร์ทันที ไม่ผ่านจะแจ้งเหตุผล</div></li>
+      <li><div><strong>รับที่บาร์</strong>ติดตามสถานะ กำลังชง → พร้อมรับ ได้จากหน้าออเดอร์</div></li>
+    </ol>
+  </section>
+
+  <main class="door__form" id="main">
+    <h1>เข้าสู่ระบบ</h1>
+    <% if (notice) { %><div class="notice notice--success" role="status"><p><%= notice %></p></div><% } %>
+    <% if (error) { %><div class="notice notice--danger" role="alert"><p><%= error %></p></div><% } %>
+
+    <form method="post" action="/login" autocomplete="on" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (next) { %><input type="hidden" name="next" value="<%= next %>"><% } %>
+      <div class="field">
+        <label for="username">ชื่อผู้ใช้</label>
+        <input type="text" class="input" id="username" name="username" value="<%= values.username %>"
+               autocomplete="username" maxlength="50" required autofocus <%- error ? 'aria-invalid="true"' : '' %>>
+      </div>
+      <div class="field">
+        <label for="password">รหัสผ่าน</label>
+        <input type="password" class="input" id="password" name="password" autocomplete="current-password" maxlength="72" required <%- error ? 'aria-invalid="true"' : '' %>>
+      </div>
+      <button type="submit" class="btn btn--primary btn--block">เข้าสู่ระบบ</button>
+    </form>
+
+    <% if (showDemoAccounts) { %>
+    <section class="demo" aria-labelledby="demo-title">
+
+      <table>
+        <tbody>
+        <% [
+          ['admin', 'Admin@1234', 'ผู้ดูแลระบบ'],
+          ['manager1', 'Manager@1234', 'ผู้จัดการร้าน'],
+          ['barista1', 'Barista@1234', 'บาริสต้า'],
+          ['customer1', 'Customer@1234', 'ลูกค้า'],
+          ['customer2', 'Customer@1234', 'ลูกค้า (ทดสอบสิทธิ์เจ้าของ)'],
+          ['tester', 'Tester@1234', 'ลูกค้า (ทดสอบ Role ใหม่)'],
+        ].forEach(([u, p, r]) => { %>
+          <tr>
+            <td><span class="mono"><%= u %></span><br><span class="muted"><%= r %></span></td>
+            <td><button type="button" class="btn btn--sm" data-fill-user="<%= u %>" data-fill-pass="<%= p %>" aria-label="กรอกบัญชี <%= u %>">เลือก</button></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </section>
+    <% } %>
+  </main>
+</div>

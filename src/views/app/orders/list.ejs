@@ -1,0 +1,62 @@
+<%
+  const staff = can('order.view_all') || can('order.view_queue');
+  const tabs = [['', 'ทั้งหมด', counts.total]].concat(
+    ['pending', 'accepted', 'brewing', 'ready', 'completed', 'rejected', 'cancelled']
+      .map(s => [s, fmt.ORDER_STATUS[s].label, counts[s]])
+  );
+%>
+<header class="page-head">
+  <h1><%= title %></h1>
+  <p class="page-head__lead">
+    <% if (can('order.view_all')) { %>ออเดอร์ของลูกค้าทุกคน ทุกสถานะ
+    <% } else if (can('order.view_queue')) { %>เห็นเฉพาะออเดอร์ที่ร้านรับเงินแล้ว (รอชง · กำลังชง · พร้อมรับ · รับแล้ว)
+    <% } else { %>เห็นเฉพาะออเดอร์ที่คุณสั่ง<% } %>
+  </p>
+  <div class="page-head__actions">
+    <% if (can('order.create')) { %><a class="btn btn--primary" href="/app/orders/new">สั่งเครื่องดื่ม</a><% } %>
+  </div>
+</header>
+
+<form method="get" class="filters" style="--cols: 4" role="search">
+  <div class="field span-2">
+    <label for="q">ค้นหา</label>
+    <input id="q" name="q" type="search" class="input" value="<%= filters.q %>" placeholder="เลขออเดอร์ เช่น K-0003<%= staff ? ', ชื่อลูกค้า' : '' %> หรือชื่อเมนู">
+  </div>
+  <div class="field">
+    <label for="status">สถานะ</label>
+    <select id="status" name="status" class="select">
+      <% tabs.forEach(([k, label, n]) => { %><option value="<%= k %>" <%= filters.status === k ? 'selected' : '' %>><%= label %> (<%= n %>)</option><% }) %>
+    </select>
+  </div>
+  <div class="filters__actions">
+    <% if (filters.mine) { %><input type="hidden" name="mine" value="1"><% } %>
+    <button class="btn btn--primary">กรอง</button>
+    <% if (filters.q || filters.status || filters.mine) { %><a class="btn btn--quiet" href="/app/orders">ล้าง</a><% } %>
+  </div>
+</form>
+
+<% if (result.rows.length) { %>
+  <table class="ledger ledger--stack">
+    <thead>
+      <tr><th>ออเดอร์</th><% if (staff) { %><th>ลูกค้า</th><% } %><th>รายการ</th><th class="r">ยอด (บาท)</th><th>สลิป</th><th>สถานะ</th></tr>
+    </thead>
+    <tbody>
+    <% result.rows.forEach(o => { %>
+      <tr class="<%= ['cancelled'].includes(o.status) ? 'is-muted' : '' %>">
+        <td data-label="ออเดอร์"><a class="order-no" href="/app/orders/<%= o.id %>"><%= fmt.orderNo(o.id) %></a><span class="sub"><%= fmt.dateTime(o.created_at) %></span></td>
+        <% if (staff) { %><td data-label="ลูกค้า"><%= o.customer_name %><span class="sub mono"><%= o.customer_username %></span></td><% } %>
+        <td data-label="รายการ"><%= o.summary %></td>
+        <td data-label="ยอด" class="r nowrap"><%= fmt.baht(o.total_amount) %></td>
+        <td data-label="สลิป"><%= o.slip_count ? 'แนบแล้ว' : (o.status === 'pending' ? 'ยังไม่แนบ' : '—') %></td>
+        <td data-label="สถานะ"><%- h.orderChip(o.status) %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+  <%- include('../../partials/pagination', { page: result.page, pages: result.pages, total: result.total }) %>
+<% } else { %>
+  <div class="empty">
+    <strong><%= filters.q || filters.status ? 'ไม่พบออเดอร์ตามเงื่อนไข' : 'ยังไม่มีออเดอร์' %></strong>
+    <% if (filters.q || filters.status) { %><a href="/app/orders">ล้างตัวกรอง</a><% } else if (can('order.create')) { %><a href="/app/orders/new">สั่งเครื่องดื่มแก้วแรก</a><% } %>
+  </div>
+<% } %>

@@ -1,0 +1,34 @@
+<header class="page-head">
+  <p class="page-head__crumb"><a href="/admin/roles">บทบาท (Role)</a></p>
+  <h1><%= role.name %></h1>
+  <p class="page-head__lead"><span class="mono"><%= role.code %></span><%= role.is_admin ? ' · ได้ทุกสิทธิ์อัตโนมัติ' : '' %><%= role.description ? ` · ${role.description}` : '' %></p>
+  <div class="page-head__actions">
+    <a class="btn" href="/admin/roles/<%= role.id %>/edit">แก้ไข</a>
+    <% if (can('admin.acl')) { %><a class="btn btn--primary" href="/admin/acl#role-<%= role.id %>">กำหนดสิทธิ์ใน ACL</a><% } %>
+  </div>
+</header>
+
+<div class="split">
+  <section aria-labelledby="perm-title">
+    <div class="section__head"><h2 id="perm-title">Permission ของ Role นี้</h2><span class="small"><%= role.is_admin ? 'ทั้งหมด' : `${role.permissions.length} รายการ` %></span></div>
+    <% if (role.is_admin) { %>
+      <p>Role นี้เป็นผู้ดูแลระบบ ได้รับทุก Permission และทุกฟังก์ชันโดยอัตโนมัติ รวมถึงฟังก์ชันที่เพิ่มภายหลัง</p>
+    <% } else if (role.permissions.length) { %>
+      <table class="ledger">
+        <tbody><% role.permissions.forEach(p => { %><tr><td><span class="tag"><%= p.code %></span></td><td><%= p.name %></td></tr><% }) %></tbody>
+      </table>
+    <% } else { %>
+      <div class="empty"><strong>ยังไม่มีสิทธิ์</strong>ไปกำหนดที่หน้า <a href="/admin/acl">ACL</a></div>
+    <% } %>
+  </section>
+  <section aria-labelledby="users-title">
+    <div class="section__head"><h2 id="users-title">ผู้ใช้ใน Role นี้</h2><span class="small"><%= role.users.length %> คน</span></div>
+    <% if (role.users.length) { %>
+      <table class="ledger">
+        <tbody><% role.users.forEach(u => { %><tr><td><%= u.full_name %> <span class="sub mono"><%= u.username %></span></td><td class="r"><% if (can('admin.users')) { %><a href="/admin/users/<%= u.id %>/edit">เปลี่ยน Role</a><% } %></td></tr><% }) %></tbody>
+      </table>
+    <% } else { %>
+      <div class="empty"><strong>ยังไม่มีผู้ใช้</strong>กำหนดได้ที่หน้า <a href="/admin/users">ผู้ใช้</a></div>
+    <% } %>
+  </section>
+</div>

@@ -1,0 +1,68 @@
+<% const isEdit = !!user;
+   const fld = (name) => ({ invalid: h.err(errors, name) ? 'aria-invalid="true"' : '', msg: h.err(errors, name) }); %>
+<header class="page-head">
+  <p class="page-head__crumb"><a href="/admin/users">ผู้ใช้</a></p>
+  <h1><%= isEdit ? `แก้ไขผู้ใช้ ${user.username}` : 'เพิ่มผู้ใช้' %></h1>
+</header>
+
+<form method="post" action="<%= isEdit ? `/admin/users/${user.id}/edit` : '/admin/users' %>" novalidate autocomplete="off">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (h.err(errors, '_form')) { %><div class="notice notice--danger" role="alert"><p><%= h.err(errors, '_form') %></p></div><% } %>
+  <div class="form-grid form-grid--2">
+    <div class="field">
+      <label for="username" class="<%= isEdit ? '' : 'req' %>">ชื่อผู้ใช้</label>
+      <% if (isEdit) { %>
+        <input id="username" class="input mono" value="<%= user.username %>" disabled aria-describedby="username-msg">
+        <p class="field__help" id="username-msg">ชื่อผู้ใช้เปลี่ยนไม่ได้</p>
+      <% } else { %>
+        <input id="username" name="username" maxlength="50" class="input mono" value="<%= h.val(values, 'username') %>" required aria-describedby="username-msg" <%- fld('username').invalid %>>
+        <p class="<%= fld('username').msg ? 'field__error' : 'field__help' %>" id="username-msg"><%= fld('username').msg || 'A-Z, 0-9, _ และ . ยาว 3–50 ตัว' %></p>
+      <% } %>
+    </div>
+    <div class="field">
+      <label for="full_name" class="req">ชื่อ-นามสกุล</label>
+      <input id="full_name" name="full_name" maxlength="150" class="input" value="<%= h.val(values, 'full_name') %>" required aria-describedby="full_name-msg" <%- fld('full_name').invalid %>>
+      <p class="field__error" id="full_name-msg"><%= fld('full_name').msg %></p>
+    </div>
+    <div class="field">
+      <label for="email">อีเมล <span class="opt">(ไม่บังคับ)</span></label>
+      <input id="email" name="email" type="email" maxlength="150" class="input" value="<%= h.val(values, 'email') %>" aria-describedby="email-msg" <%- fld('email').invalid %>>
+      <p class="field__error" id="email-msg"><%= fld('email').msg %></p>
+    </div>
+    <div class="field">
+      <label for="phone">เบอร์โทร <span class="opt">(ไม่บังคับ)</span></label>
+      <input id="phone" name="phone" type="tel" maxlength="20" class="input num" value="<%= h.val(values, 'phone') %>" placeholder="081-234-5678" aria-describedby="phone-msg" <%- fld('phone').invalid %>>
+      <p class="field__error" id="phone-msg"><%= fld('phone').msg %></p>
+    </div>
+    <div class="field">
+      <label for="role_id" class="req">บทบาท (Role)</label>
+      <select id="role_id" name="role_id" class="select" aria-describedby="role-msg" <%- fld('role_id').invalid %>>
+        <% roles.forEach(r => { %><option value="<%= r.id %>" <%= String(h.val(values, 'role_id')) === String(r.id) ? 'selected' : '' %>><%= r.name %> (<%= r.code %>)</option><% }) %>
+      </select>
+      <p class="<%= fld('role_id').msg ? 'field__error' : 'field__help' %>" id="role-msg"><%= fld('role_id').msg || 'มีผลกับผู้ใช้ทันทีใน Request ถัดไป' %></p>
+    </div>
+    <div class="field">
+      <span class="field__label">สถานะบัญชี</span>
+      <label class="check"><input type="checkbox" name="is_active" value="1" <%= h.val(values, 'is_active', true) ? 'checked' : '' %>> เปิดใช้งาน</label>
+      <p class="field__error"><%= fld('is_active').msg %></p>
+    </div>
+    <div class="span-all">
+      <hr class="mt-0">
+      <p class="small muted mb-0"><%= isEdit ? 'ตั้งรหัสผ่านใหม่ (เว้นว่างถ้าไม่ต้องการเปลี่ยน)' : 'รหัสผ่านเริ่มต้น' %> — อย่างน้อย 8 ตัว มีตัวอักษรและตัวเลข</p>
+    </div>
+    <div class="field">
+      <label for="password" class="<%= isEdit ? '' : 'req' %>">รหัสผ่าน</label>
+      <input id="password" name="password" type="password" maxlength="72" autocomplete="new-password" class="input" aria-describedby="password-msg" <%- fld('password').invalid %>>
+      <p class="field__error" id="password-msg"><%= fld('password').msg %></p>
+    </div>
+    <div class="field">
+      <label for="password_confirm" class="<%= isEdit ? '' : 'req' %>">ยืนยันรหัสผ่าน</label>
+      <input id="password_confirm" name="password_confirm" type="password" maxlength="72" autocomplete="new-password" class="input" aria-describedby="password_confirm-msg" <%- fld('password_confirm').invalid %>>
+      <p class="field__error" id="password_confirm-msg"><%= fld('password_confirm').msg %></p>
+    </div>
+  </div>
+  <div class="form-actions">
+    <a href="/admin/users" class="btn btn--quiet">ยกเลิก</a>
+    <button class="btn btn--primary"><%= isEdit ? 'บันทึก' : 'เพิ่มผู้ใช้' %></button>
+  </div>
+</form>

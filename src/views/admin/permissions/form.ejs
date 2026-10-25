@@ -1,0 +1,56 @@
+<%
+  const isEdit = !!perm;
+  const sel = isEdit && !Object.keys(errors).length ? new Set(perm.function_ids) : selected;
+  const modules = [];
+  functions.forEach(f => { let g = modules.find(m => m.key === f.module); if (!g) { g = { key: f.module, items: [] }; modules.push(g); } g.items.push(f); });
+%>
+<header class="page-head">
+  <p class="page-head__crumb"><a href="/admin/permissions">Permission</a></p>
+  <h1><%= isEdit ? `แก้ไข ${perm.code}` : 'เพิ่ม Permission' %></h1>
+  <p class="page-head__lead">Middleware <code>authorize()</code> ในแต่ละ Route ตรวจว่า Role ของผู้ใช้มี Permission ที่เชื่อมกับฟังก์ชันนั้นหรือไม่ — เพิ่มแค่ชื่อโดยไม่เลือกฟังก์ชันจะยังไม่เปิดสิทธิ์อะไร</p>
+</header>
+
+<form method="post" action="<%= isEdit ? `/admin/permissions/${perm.id}/edit` : '/admin/permissions' %>" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="split">
+    <div class="stack-sm">
+      <div class="field">
+        <label for="code" class="req">รหัส Permission</label>
+        <input id="code" name="code" maxlength="100" class="input mono" value="<%= h.val(values, 'code') %>" placeholder="เช่น report.view" required aria-describedby="code-msg" <%- h.err(errors, 'code') ? 'aria-invalid="true"' : '' %>>
+        <p class="<%= h.err(errors, 'code') ? 'field__error' : 'field__help' %>" id="code-msg"><%= h.err(errors, 'code') || 'รูปแบบ ทรัพยากร.การกระทำ' %></p>
+      </div>
+      <div class="field">
+        <label for="name" class="req">ชื่อที่แสดง</label>
+        <input id="name" name="name" maxlength="150" class="input" value="<%= h.val(values, 'name') %>" placeholder="เช่น ดูรายงานยอดขาย" required aria-describedby="name-msg" <%- h.err(errors, 'name') ? 'aria-invalid="true"' : '' %>>
+        <p class="field__error" id="name-msg"><%= h.err(errors, 'name') %></p>
+      </div>
+      <div class="field">
+        <label for="description">คำอธิบาย <span class="opt">(ไม่บังคับ)</span></label>
+        <textarea id="description" name="description" rows="3" maxlength="500" class="textarea"><%= h.val(values, 'description') %></textarea>
+      </div>
+    </div>
+
+    <fieldset class="panel fieldset-plain" aria-describedby="fn-msg">
+      <legend class="sr-only">ฟังก์ชันที่ Permission นี้เปิดให้ใช้</legend>
+      <h2>ฟังก์ชันที่ Permission นี้เปิดให้ใช้</h2>
+      <p class="field__error" id="fn-msg"><%= h.err(errors, 'function_ids') %></p>
+      <ul class="fn-pick">
+        <% modules.forEach(m => { %>
+          <li class="mod"><%= MODULE_LABELS[m.key] || m.key %></li>
+          <% m.items.forEach(f => { %>
+            <li>
+              <label for="fn-<%= f.id %>">
+                <input type="checkbox" id="fn-<%= f.id %>" name="function_ids" value="<%= f.id %>" <%= sel.has(f.id) ? 'checked' : '' %>>
+                <span><span class="name"><%= f.name %></span> <span class="tag"><%= f.code %></span><span class="ep"><%= f.endpoints %></span></span>
+              </label>
+            </li>
+          <% }) %>
+        <% }) %>
+      </ul>
+    </fieldset>
+  </div>
+  <div class="form-actions">
+    <a href="/admin/permissions" class="btn btn--quiet">ยกเลิก</a>
+    <button class="btn btn--primary"><%= isEdit ? 'บันทึก' : 'เพิ่ม Permission' %></button>
+  </div>
+</form>

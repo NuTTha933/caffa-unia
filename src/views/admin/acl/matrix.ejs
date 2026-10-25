@@ -1,0 +1,56 @@
+<%
+  const modules = [];
+  m.functions.forEach(f => { let g = modules.find(x => x.key === f.module); if (!g) { g = { key: f.module, items: [] }; modules.push(g); } g.items.push(f); });
+%>
+<header class="page-head">
+  <h1>Access Matrix: Role × ฟังก์ชัน</h1>
+  <p class="page-head__lead">คำนวณสดจาก ACL ในฐานข้อมูล (Role → Permission → ฟังก์ชัน) จึงตรงกับที่ Middleware ใช้ตรวจจริงเสมอ</p>
+  <div class="page-head__actions"><a class="btn btn--primary" href="/admin/acl">แก้ไข ACL</a></div>
+</header>
+
+<div class="scroll-x" tabindex="0" role="region" aria-label="Access Matrix เลื่อนแนวนอนได้">
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th scope="col">ฟังก์ชัน / API</th>
+        <% m.roles.forEach(r => { %><th scope="col" class="<%= r.is_admin ? 'is-admin' : '' %>"><%= r.name %><span class="sub"><%= r.code %></span></th><% }) %>
+      </tr>
+    </thead>
+    <tbody>
+      <% modules.forEach(g => { %>
+        <tr class="group-row"><td colspan="<%= m.roles.length + 1 %>"><%= MODULE_LABELS[g.key] || g.key %></td></tr>
+        <% g.items.forEach(f => { %>
+          <tr>
+            <th scope="row"><%= f.name %> <span class="perm-code"><%= f.code %></span><span class="fn"><%= f.endpoints %></span></th>
+            <% m.roles.forEach(r => { const perms = m.cell.get(`${r.id}:${f.id}`) || []; %>
+              <td class="cell<%= r.is_admin ? ' is-admin' : '' %>">
+                <% if (r.is_admin) { %>
+                  <span class="yes">ได้</span><span class="via">ทุกสิทธิ์</span>
+                <% } else if (perms.length) { %>
+                  <span class="yes">ได้</span><span class="via"><%= perms.join(', ') %></span>
+                <% } else { %>
+                  <span class="no">—<span class="sr-only">ไม่มีสิทธิ์</span></span>
+                <% } %>
+              </td>
+            <% }) %>
+          </tr>
+        <% }) %>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<section class="section" aria-labelledby="cond-title">
+  <div class="section__head"><h2 id="cond-title">เงื่อนไขเฉพาะข้อมูล</h2><span class="small">ตรวจเพิ่มใน Service นอกเหนือจากตารางนี้</span></div>
+  <ul class="notes">
+    <li><strong>ดูออเดอร์ของตนเอง</strong> — เห็นเฉพาะออเดอร์ที่ customer_id = ผู้ใช้</li>
+    <li><strong>ดูคิวบาร์</strong> — เห็นเฉพาะออเดอร์สถานะ รอชง / กำลังชง / พร้อมรับ / รับแล้ว (ไม่เห็นออเดอร์ที่ยังไม่ชำระ)</li>
+    <li><strong>ยกเลิกออเดอร์</strong> — เฉพาะเจ้าของ และสถานะ "รอตรวจสลิป" เท่านั้น</li>
+    <li><strong>ตรวจสลิป</strong> — ห้ามตรวจออเดอร์ของตนเอง และรับออเดอร์ได้เมื่อมีสลิปแนบแล้ว</li>
+    <li><strong>แนบสลิป</strong> — เฉพาะออเดอร์ของตนเองที่ยังรอตรวจ (แนบใหม่จะแทนที่สลิปเดิม)</li>
+    <li><strong>เปิดสลิป</strong> — ต้องมี slip.view และมองเห็นออเดอร์นั้นได้ · บาริสต้าเห็นออเดอร์แต่เปิดสลิปไม่ได้</li>
+    <li><strong>ลบสลิป</strong> — เฉพาะสลิปที่ตนอัปโหลดขณะรอตรวจ (Admin ลบได้ทุกไฟล์)</li>
+    <li><strong>ภาพเมนู</strong> — เปิดได้เมื่อมีสิทธิ์ดูเมนู · ไฟล์ทุกชนิดไม่มี URL สาธารณะ</li>
+    <li><strong>ดู Log งาน</strong> — log.view เห็นเฉพาะหมวดออเดอร์ เมนู และไฟล์ · log.view_all เห็นทุกหมวด</li>
+  </ul>
+</section>

@@ -1,0 +1,63 @@
+<header class="page-head">
+  <h1>เมนู</h1>
+  <p class="page-head__lead"><%= count %> รายการ<%= soldOut ? ` · หมดชั่วคราว ${soldOut} รายการ` : '' %> · ราคาเป็นบาทต่อแก้ว/ชิ้น</p>
+  <div class="page-head__actions">
+    <% if (can('order.create')) { %><a class="btn btn--primary" href="/app/orders/new">สั่งเครื่องดื่ม</a><% } %>
+    <% if (can('menu.create')) { %><a class="btn" href="/app/menu/new">เพิ่มเมนู</a><% } %>
+  </div>
+</header>
+
+<form method="get" class="filters" style="--cols: 4" role="search">
+  <div class="field span-2">
+    <label for="q">ค้นหาเมนู</label>
+    <input id="q" name="q" type="search" class="input" value="<%= filters.q %>" placeholder="เช่น ลาเต้ หรือ CF-03">
+  </div>
+  <div class="field">
+    <label for="category">หมวด</label>
+    <select id="category" name="category" class="select">
+      <option value="">ทุกหมวด</option>
+      <% categories.forEach(c => { %><option value="<%= c.id %>" <%= filters.category === String(c.id) ? 'selected' : '' %>><%= c.name %></option><% }) %>
+    </select>
+  </div>
+  <div class="filters__actions">
+    <button class="btn btn--primary">ค้นหา</button>
+    <% if (filters.q || filters.category) { %><a class="btn btn--quiet" href="/app/menu">ล้าง</a><% } %>
+  </div>
+</form>
+
+<% if (!groups.length) { %>
+  <div class="empty"><strong>ไม่พบเมนูที่ค้นหา</strong>ลองคำอื่น หรือ <a href="/app/menu">ดูเมนูทั้งหมด</a></div>
+<% } %>
+
+<div class="board">
+  <% groups.forEach(g => { %>
+    <section class="board__cat" aria-labelledby="cat-<%= g.id %>">
+      <h2 id="cat-<%= g.id %>"><%= g.name %></h2>
+      <ul class="board__list">
+        <% g.items.forEach(m => { %>
+          <li class="line<%= m.is_available ? '' : ' is-soldout' %>">
+            <div class="line__top">
+              <% if (m.image_id) { %><span class="line__thumb"><img src="/app/files/<%= m.image_id %>" alt="" width="44" height="44" loading="lazy"></span><% } %>
+              <a class="line__name" href="/app/menu/<%= m.id %>"><%= m.name %></a>
+              <span class="line__leader" aria-hidden="true"></span>
+              <span class="line__price"><span class="sr-only">ราคา </span><%= fmt.baht(m.price) %></span>
+            </div>
+            <% if (m.description) { %><p class="line__desc"><%= m.description %></p><% } %>
+            <div class="line__meta">
+              <span class="code"><%= m.code %></span>
+              <%- h.availabilityChip(m.is_available) %>
+              <% if (can('menu.toggle')) { %>
+                <form method="post" action="/app/menu/<%= m.id %>/availability" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <input type="hidden" name="back" value="list">
+                  <input type="hidden" name="available" value="<%= m.is_available ? '0' : '1' %>">
+                  <button class="btn btn--sm"><%= m.is_available ? 'ตั้งเป็นหมด' : 'เปิดขาย' %></button>
+                </form>
+              <% } %>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    </section>
+  <% }) %>
+</div>
