@@ -1,0 +1,15 @@
+/* Utility classes เล็กๆ (ระยะห่าง) — โหลดเป็นไฟล์สุดท้ายเพื่อให้ชนะ class ของแต่ละหน้า
+ */
+
+/* ===================================================================
+   Utilities (token-based only)
+   =================================================================== */
+.tag-list--inline { display: inline-flex; vertical-align: middle; }
+.mt-0 { margin-top: 0; }
+.mt-sm { margin-top: var(--space-sm); }
+.mt-lg { margin-top: var(--space-lg); }
+.mt-xl { margin-top: var(--space-xl); }
+.mb-0 { margin-bottom: 0; }
+.stack-sm > * + * { margin-top: var(--space-sm); }
+@media (min-width: 40rem) { .span-2 { grid-column: span 2; } }
+.fieldset-plain { border: 0; border-top: var(--rule-strong) solid var(--color-ink); margin: 0; padding: var(--space-sm) 0 0; min-width: 0; }

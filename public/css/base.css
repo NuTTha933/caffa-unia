@@ -1,0 +1,100 @@
+
+/* พื้นฐาน: reset, ตัวอักษร, ลิงก์, focus และ motion
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { overflow-x: clip; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-weight: var(--weight-body);
+  font-size: var(--text-base);
+  line-height: var(--lh-body);
+  font-feature-settings: "kern";
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-style: normal;
+  line-height: var(--lh-display);
+  letter-spacing: var(--tracking-display);
+  margin: 0;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+h1 { font-size: var(--text-display); }
+h2 { font-size: var(--text-lg); }
+h3 { font-size: var(--text-md); }
+
+p { margin: 0 0 var(--space-sm); max-width: var(--measure); }
+
+a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule-2);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  transition: text-decoration-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+@media (hover: hover) {
+  a:hover { text-decoration-color: var(--color-accent); color: var(--color-ink-2); }
+}
+
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+code, .mono, kbd {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+hr { border: 0; border-top: var(--rule-hair) solid var(--color-rule); margin: var(--space-lg) 0; }
+
+.muted { color: var(--color-muted); }
+.small { font-size: var(--text-sm); }
+.num { font-variant-numeric: tabular-nums; }
+.nowrap { white-space: nowrap; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip-link {
+  position: absolute; left: var(--space-md); top: -4rem; z-index: var(--z-toast);
+  background: var(--color-ink); color: var(--color-paper); padding: var(--space-xs) var(--space-md);
+  text-decoration: none;
+}
+.skip-link:focus-visible { top: var(--space-md); }
+
+/* ===================================================================
+   Motion — one orchestrated entrance; nothing else moves on its own
+   =================================================================== */
+@media (prefers-reduced-motion: no-preference) {
+  .main > .page-head { animation: rise var(--dur-long) var(--ease-out) both; }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
+
+@media print {
+  .masthead, .rail, .foot, .page-head__actions, .btn, .savebar { display: none !important; }
+  body { background: none; }
+}

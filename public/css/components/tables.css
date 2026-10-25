@@ -1,0 +1,59 @@
+/* ตาราง (ledger) และการแบ่งหน้า — บนมือถือเปลี่ยนเป็นแบบเรียงแถว
+ * ส่วนหนึ่งของระบบ Kernel Coffee — สี/ฟอนต์/ระยะห่างทั้งหมดอ้างอิงตัวแปรใน tokens.css
+ */
+
+/* ===================================================================
+   Ledger tables — hairlines, tabular figures, stack on small screens
+   =================================================================== */
+.ledger { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ledger th {
+  text-align: start; font-size: var(--text-sm); font-weight: var(--weight-strong); color: var(--color-muted);
+  padding: var(--space-xs) var(--space-sm) var(--space-xs) 0;
+  border-bottom: var(--rule-hair) solid var(--color-ink);
+  white-space: nowrap;
+}
+.ledger td {
+  padding: var(--space-sm) var(--space-sm) var(--space-sm) 0;
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+  vertical-align: top;
+}
+.ledger .r { text-align: end; }
+.ledger .title { font-weight: var(--weight-strong); }
+.ledger .sub { display: block; font-size: var(--text-sm); color: var(--color-muted); }
+.ledger tr.is-muted td { color: var(--color-muted); }
+.ledger td.actions { white-space: nowrap; text-align: end; }
+.ledger td.actions > * { margin-inline-start: var(--space-2xs); }
+.ledger .group-row td {
+  background: var(--color-paper-2);
+  font-weight: var(--weight-strong);
+  font-size: var(--text-sm);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+@media (max-width: 47.99rem) {
+  .ledger--stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ledger--stack tr { display: block; padding: var(--space-sm) 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
+  .ledger--stack td { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: var(--space-sm); padding: var(--space-2xs) 0; border: 0; }
+  .ledger--stack td::before { content: attr(data-label); color: var(--color-muted); font-size: var(--text-sm); }
+  .ledger--stack td.actions { text-align: start; display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+  .ledger--stack td.actions::before { content: none; }
+  .ledger--stack td.actions > * { margin: 0; }
+  .ledger--stack .r { text-align: start; }
+}
+
+/* ตารางกว้าง (ACL / Access Matrix) เลื่อนแนวนอนในกรอบของตัวเอง ไม่ทำให้ทั้งหน้าเลื่อน */
+.scroll-x { position: relative; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.scroll-x:focus-visible { outline-offset: -2px; }
+
+.pager {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-sm);
+  padding-top: var(--space-md); font-size: var(--text-sm); color: var(--color-muted);
+}
+.pager__links { display: flex; gap: var(--space-xs); }
+
+.empty {
+  padding: var(--space-xl) 0;
+  color: var(--color-muted);
+  max-width: 40ch;
+}
+.empty strong { display: block; color: var(--color-ink); font-family: var(--font-display); font-size: var(--text-md); margin-bottom: var(--space-2xs); }

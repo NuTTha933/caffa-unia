@@ -1,0 +1,38 @@
+/* หน้าหลักและรายงาน: ตัวเลขสรุป, การ์ดออเดอร์ปัจจุบัน
+ */
+
+/* ===================================================================
+   Figures (real numbers only) + dashboard
+   =================================================================== */
+.figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: var(--rule-hair) solid var(--color-ink); }
+@media (min-width: 48rem) { .figures { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.figure { padding: var(--space-sm) var(--space-md) var(--space-sm) 0; border-bottom: var(--rule-hair) solid var(--color-rule); min-width: 0; }
+.figure + .figure { padding-inline-start: var(--space-md); border-inline-start: var(--rule-hair) solid var(--color-rule); }
+@media (max-width: 47.99rem) {
+  .figure:nth-child(odd) { padding-inline-start: 0; border-inline-start: 0; }
+}
+.figure__label { font-size: var(--text-sm); color: var(--color-muted); margin: 0; }
+.figure__value { font-family: var(--font-body); font-weight: var(--weight-strong); font-size: var(--text-figure); line-height: 1.15; margin: var(--space-2xs) 0 0; font-variant-numeric: tabular-nums; }
+.figure__value small { font-size: var(--text-sm); font-weight: var(--weight-body); color: var(--color-muted); }
+.figure__note { font-size: var(--text-sm); color: var(--color-muted); margin: 0; }
+.figure a { text-decoration-color: var(--color-rule); }
+
+.split { display: grid; gap: var(--space-xl); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 64rem) { .split { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; } }
+
+.now-card {
+  border: var(--rule-hair) solid var(--color-ink);
+  background: var(--color-field);
+  padding: var(--space-md);
+}
+.now-card__top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--space-xs); margin-bottom: var(--space-sm); }
+.now-card h2 { font-size: var(--text-lg); }
+
+.perm-box { font-size: var(--text-sm); }
+.perm-box p { color: var(--color-muted); }
+
+.cta-line {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm) var(--space-lg);
+  padding: var(--space-md) 0; border-top: var(--rule-hair) solid var(--color-ink); border-bottom: var(--rule-hair) solid var(--color-ink);
+}
+.cta-line p { margin: 0; font-family: var(--font-display); font-size: var(--text-md); font-weight: var(--weight-display); line-height: var(--lh-display); }

@@ -1,0 +1,31 @@
+/* หน้าเข้าสู่ระบบและหน้าแจ้งข้อผิดพลาด
+ */
+
+/* ===================================================================
+   Login
+   =================================================================== */
+.door { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); }
+.door__intro { padding: var(--space-xl) var(--gutter) var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-ink); }
+.door__intro .wordmark { font-size: clamp(2rem, 4vw + 1rem, 3.5rem); }
+.door__intro .tagline { font-family: var(--font-display); font-size: var(--text-md); line-height: var(--lh-display); font-weight: var(--weight-display); margin: var(--space-md) 0 var(--space-lg); max-width: 34ch; }
+.door__flow { list-style: none; margin: 0; padding: 0; counter-reset: flow; max-width: 34rem; }
+.door__flow li { counter-increment: flow; display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: var(--space-sm); padding: var(--space-xs) 0; border-top: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); }
+.door__flow li::before { content: counter(flow); font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--text-md); line-height: 1.2; }
+.door__flow strong { display: block; font-size: var(--text-base); }
+.door__form { padding: var(--space-xl) var(--gutter); max-width: 30rem; width: 100%; }
+.door__form h1 { font-size: var(--text-xl); margin-bottom: var(--space-md); }
+.door__form form { display: grid; gap: var(--space-sm); }
+.demo { margin-top: var(--space-xl); font-size: var(--text-sm); }
+.demo h2 { font-size: var(--text-base); font-family: var(--font-body); font-weight: var(--weight-strong); margin-bottom: var(--space-2xs); }
+.demo table { width: 100%; border-collapse: collapse; }
+.demo td { padding: var(--space-2xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); vertical-align: middle; }
+.demo td:last-child { text-align: end; }
+@media (min-width: 60rem) {
+  .door { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .door__intro { border-bottom: 0; border-inline-end: var(--rule-hair) solid var(--color-ink); padding: var(--space-3xl) var(--space-2xl); display: flex; flex-direction: column; justify-content: center; }
+  .door__form { align-self: center; padding: var(--space-3xl) var(--space-2xl); }
+}
+
+/* Error page */
+.error-page { padding: var(--space-xl) 0; max-width: 40rem; }
+.error-page .code { font-family: var(--font-mono); color: var(--color-accent); margin: 0 0 var(--space-xs); }

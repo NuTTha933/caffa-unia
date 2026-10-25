@@ -1,0 +1,84 @@
+/* ข้อความแจ้งเตือน (flash) และป้ายสถานะ (chip/tag)
+ * ส่วนหนึ่งของระบบ Kernel Coffee — สี/ฟอนต์/ระยะห่างทั้งหมดอ้างอิงตัวแปรใน tokens.css
+ */
+
+/* ===================================================================
+   Notices (flash) — quiet, in-flow, no layout jump after load
+   =================================================================== */
+.notice {
+  display: flex; align-items: flex-start; gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  border: var(--rule-hair) solid var(--color-rule-2);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+}
+.notice p { margin: 0; flex: 1; max-width: none; }
+.notice::before { font-weight: var(--weight-strong); flex: none; }
+.notice--success { border-color: var(--color-ok); background: var(--color-ok-wash); }
+.notice--success::before { content: "✓"; color: var(--color-ok); }
+.notice--danger { border-color: var(--color-danger); background: var(--color-danger-wash); }
+.notice--danger::before { content: "!"; color: var(--color-danger); }
+.notice--info::before { content: "i"; color: var(--color-ink-2); font-family: var(--font-mono); }
+.notice__close {
+  flex: none; position: relative; width: 1.75rem; height: 1.75rem; margin: calc(var(--space-2xs) * -1) calc(var(--space-xs) * -1) 0 0;
+  border: 0; background: transparent; color: var(--color-ink-2); font: inherit; font-size: 1.15rem; line-height: 1; cursor: pointer;
+}
+.notice__close::before { content: ""; position: absolute; inset: -0.5rem; }
+
+/* ===================================================================
+   Status chips — text + glyph, never colour alone
+   =================================================================== */
+.chip {
+  display: inline-flex; align-items: center; gap: 0.35em;
+  padding: var(--space-3xs) var(--space-xs);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  line-height: 1.6;
+  white-space: nowrap;
+  border: var(--rule-hair) solid currentColor;
+  border-radius: var(--radius);
+}
+.chip::before {
+  content: "";
+  flex: none;
+  width: 0.55em; height: 0.55em;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+}
+.chip--warn   { color: var(--color-warn);   background: var(--color-warn-wash); }
+.chip--warn::before { border-style: dashed; }
+.chip--info   { color: var(--color-ink-2);  background: var(--color-paper-3); }
+.chip--accent { color: var(--color-accent); background: var(--color-accent-wash); }
+.chip--accent::before { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+.chip--ok     { color: var(--color-ok);     background: var(--color-ok-wash); }
+.chip--ok::before { background: currentColor; }
+.chip--done   { color: var(--color-muted);  background: transparent; border-color: var(--color-rule-2); }
+.chip--done::before {
+  width: 0.32em; height: 0.6em; border-radius: 0;
+  border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-0.05em, -0.1em);
+}
+.chip--danger { color: var(--color-danger); background: var(--color-danger-wash); }
+.chip--danger::before {
+  border: 0; border-radius: 0; width: 0.6em; height: 0.6em;
+  background: linear-gradient(45deg, transparent 42%, currentColor 42%, currentColor 58%, transparent 58%),
+              linear-gradient(-45deg, transparent 42%, currentColor 42%, currentColor 58%, transparent 58%);
+}
+.chip--s-cancelled::before {
+  width: 0.6em; height: 0; border-radius: 0; border-width: 2px 0 0; transform: none;
+}
+
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  padding: 0 var(--space-2xs);
+  border: var(--rule-hair) solid var(--color-rule);
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+.tag-list { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+
+.order-no { font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.01em; white-space: nowrap; }

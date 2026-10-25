@@ -1,0 +1,37 @@
+/* หน้าคิวบาร์ (บาริสต้า): คอลัมน์ รอชง · กำลังชง · พร้อมรับ
+ */
+
+/* ===================================================================
+   Bar rail — order tickets (barista queue)
+   =================================================================== */
+.bar { display: grid; gap: var(--space-xl); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 52rem) { .bar { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); } }
+.bar__col h2 {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: var(--text-md);
+  padding-bottom: var(--space-2xs);
+  border-bottom: var(--rule-strong) solid var(--color-ink);
+  margin-bottom: var(--space-sm);
+}
+.bar__col h2 .count { font-family: var(--font-body); font-variant-numeric: tabular-nums; font-size: var(--text-base); color: var(--color-muted); }
+.bar__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-sm); }
+
+.ticket {
+  background: var(--color-field);
+  border: var(--rule-hair) solid var(--color-rule);
+  border-top: 2px dashed var(--color-rule-2);
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+.ticket__head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-sm); }
+.ticket__no { font-family: var(--font-mono); font-size: var(--text-md); font-weight: 500; color: var(--color-ink); text-decoration: none; }
+.ticket__age { font-size: var(--text-sm); color: var(--color-muted); white-space: nowrap; }
+.ticket__who { font-size: var(--text-sm); color: var(--color-neutral); margin: 0 0 var(--space-xs); }
+.ticket__items { list-style: none; margin: 0 0 var(--space-sm); padding: 0; }
+.ticket__items li { display: grid; grid-template-columns: 2rem minmax(0, 1fr); padding: var(--space-3xs) 0; }
+.ticket__items .q { font-family: var(--font-display); font-weight: var(--weight-display); font-variant-numeric: tabular-nums; }
+.ticket__items .o { display: block; font-size: var(--text-sm); color: var(--color-muted); }
+.ticket__note { font-size: var(--text-sm); padding: var(--space-2xs) var(--space-xs); background: var(--color-warn-wash); color: var(--color-ink); margin: 0 0 var(--space-sm); border: var(--rule-hair) solid var(--color-warn); }
+.ticket.is-ready { border-color: var(--color-ok); }
+.bar__empty { color: var(--color-muted); font-size: var(--text-sm); padding: var(--space-md) 0; margin: 0; }
+
+.done-strip { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); font-size: var(--text-sm); color: var(--color-muted); }
