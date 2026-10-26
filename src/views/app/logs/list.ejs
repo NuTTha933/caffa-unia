@@ -11,11 +11,11 @@
 
 <form method="get" class="filters" role="search">
   <div class="field">
-    <label for="from">ตั้งแต่วันที่</label>
+    <label for="from">ตั้งแต่วันที่ (ค.ศ.)</label>
     <input type="date" id="from" name="from" class="input" value="<%= filters.from %>">
   </div>
   <div class="field">
-    <label for="to">ถึงวันที่</label>
+    <label for="to">ถึงวันที่ (ค.ศ.)</label>
     <input type="date" id="to" name="to" class="input" value="<%= filters.to %>">
   </div>
   <div class="field">
@@ -55,6 +55,9 @@
   <div class="filters__actions span-all">
     <button class="btn btn--primary">กรอง</button>
     <a class="btn btn--quiet" href="/app/logs">ล้าง</a>
+    <% if (filters.from || filters.to) { %>
+      <span class="filters__range">ช่วงที่เลือก: <%= filters.from && filters.to ? `${fmt.date(filters.from)} – ${fmt.date(filters.to)}` : filters.from ? `ตั้งแต่ ${fmt.date(filters.from)}` : `ถึง ${fmt.date(filters.to)}` %></span>
+    <% } %>
   </div>
 </form>
 
