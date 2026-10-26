@@ -1,4 +1,3 @@
-// /app/profile — ข้อมูลส่วนตัวและเปลี่ยนรหัสผ่านของตนเอง (ทุกคนที่เข้าสู่ระบบ)
 const express = require('express');
 const userService = require('../../services/userService');
 

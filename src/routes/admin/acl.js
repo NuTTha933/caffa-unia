@@ -1,4 +1,3 @@
-// /admin/acl — ตาราง ACL รูปแบบ Role × Permission (ติ๊กเพื่อกำหนด / เอาออกเพื่อยกเลิก)
 const express = require('express');
 const aclService = require('../../services/aclService');
 const { authorize } = require('../../middleware/acl');
@@ -9,7 +8,6 @@ router.use(authorize('admin.acl'));
 
 router.get('/', async (req, res) => {
   const m = await aclService.getMatrix();
-  // จัดกลุ่ม Permission ตามทรัพยากร (ส่วนหน้าจุด)
   const groups = [];
   for (const p of m.permissions) {
     const key = p.code.split('.')[0];
@@ -17,7 +15,6 @@ router.get('/', async (req, res) => {
     if (!g) { g = { key, items: [] }; groups.push(g); }
     g.items.push(p);
   }
-  // เรียงกลุ่มตามลำดับงานของร้าน (เมนู → ออเดอร์ → สลิป → รายงาน → Log → ส่วน Admin)
   const order = Object.keys(PERMISSION_GROUPS);
   const rank = (k) => (order.indexOf(k) < 0 ? 99 : order.indexOf(k));
   groups.sort((a, b) => rank(a.key) - rank(b.key));

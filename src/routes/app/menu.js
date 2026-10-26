@@ -1,6 +1,3 @@
-// =====================================================================
-//  /app/menu — เมนูบอร์ดและการจัดการเมนู (ทุก Route ตรวจสิทธิ์ฝั่ง Server ด้วย authorize)
-// =====================================================================
 const express = require('express');
 const menuService = require('../../services/menuService');
 const { authorize } = require('../../middleware/acl');
@@ -80,7 +77,6 @@ router.post('/:id/edit', authorize('menu.update'), async (req, res) => {
 const backToItem = (req) => `/app/menu/${req.params.id}`;
 const backTo = (req) => (req.body && req.body.back === 'list' ? '/app/menu' : backToItem(req));
 
-// บาริสต้า/ผู้จัดการ: ตั้งเมนูเป็น "หมด" หรือกลับมาขาย
 router.post('/:id/availability', authorize('menu.toggle'), withFlashBack(async (req, res) => {
   const item = await menuService.setAvailability(req, idParam(req), req.body.available === '1');
   req.flash('success', item.is_available ? `${item.name} กลับมาขายแล้ว` : `ตั้ง ${item.name} เป็น "หมด" แล้ว — ลูกค้าจะสั่งไม่ได้จนกว่าจะเปิดขาย`);

@@ -1,10 +1,6 @@
-// =====================================================================
-//  ทดสอบ Race Condition: ยิงคำขอที่ชนกัน "พร้อมกัน" หลายรอบ แล้วตรวจว่าข้อมูลยังถูกต้อง
-//  รัน: npm run test:race   (ใช้ฐานข้อมูล <DB_NAME>_test แยกจากข้อมูลจริง และรีเซ็ตทุกครั้ง)
-// =====================================================================
 process.env.NODE_ENV = 'test';
 require('dotenv').config({ quiet: true });
-process.env.DB_NAME = `${process.env.DB_NAME || 'kernel_coffee'}_test`;
+process.env.DB_NAME = `${process.env.DB_NAME || 'Caffa_Unia'}_test`;
 process.env.UPLOAD_DIR = 'storage/test-uploads';
 
 const { test, before, after } = require('node:test');
@@ -62,7 +58,6 @@ after(async () => {
   await db.pool.end();
 });
 
-// ---------------------------------------------------------------------
 test('A. ลูกค้ากดแนบสลิปซ้ำพร้อมกัน 2 ครั้ง: ออเดอร์ต้องเหลือสลิปเดียว (สลิปเก่าถูกแทนที่)', async () => {
   const customer = await login('customer1', 'Customer@1234');
   let bad = 0;

@@ -1,10 +1,16 @@
-# Kernel Coffee — ระบบจัดการร้านกาแฟ
+# Caffa_Unia — ระบบจัดการร้านกาแฟ
 ลูกค้าสั่งเครื่องดื่มและแนบสลิป → ผู้จัดการตรวจสลิป → บาริสต้าชงและส่งมอบ
 มีระบบยืนยันตัวตน (Session + bcrypt), กำหนดสิทธิ์แบบ **ACL** ที่จัดการผ่านหน้าเว็บ, ส่วน Admin แยกทาง Logical, Log ย้อนหลัง และอัปโหลดไฟล์ตามสิทธิ์
 
 | ปัญหา | ผู้ใช้เป้าหมาย | ขอบเขต |
 |---|---|---|
 | ร้านรับออเดอร์ทางแชต ตรวจสลิปและติดตามคิวยาก ลูกค้าไม่รู้ว่าเครื่องดื่มเสร็จหรือยัง | ลูกค้า, ผู้จัดการร้าน, บาริสต้า, ผู้ดูแลระบบ | เมนู, สั่ง + แนบสลิป → ตรวจสลิป → ชง → พร้อมรับ → ส่งมอบ, รายงานยอดขาย, Log, จัดการผู้ใช้และสิทธิ์ |
+
+เทคโนโลยี: Node.js (Express 5) · EJS · PostgreSQL · express-session + connect-pg-simple · bcryptjs · multer · helmet
+
+## 1. ติดตั้งและรัน
+
+ต้องมี Node.js 18 ขึ้นไป และ PostgreSQL
 
 ```bash
 npm install
@@ -19,18 +25,18 @@ npm start                     # หรือ npm run dev (รีสตาร์�
 รัน SQL ด้วยมือแทนสคริปต์ก็ได้ (แต่สคริปต์จะคัดลอกไฟล์ภาพ/สลิปตัวอย่างให้ด้วย):
 
 ```bash
-createdb kernel_coffee
-psql -d kernel_coffee -f database/schema.sql
-psql -d kernel_coffee -f database/seed.sql
+createdb Caffa_Unia
+psql -d Caffa_Unia -f database/schema.sql
+psql -d Caffa_Unia -f database/seed.sql
 ```
 
 > ไฟล์ `.env` (มีรหัสผ่านจริง) ไม่ได้อยู่ในงานที่ส่ง ให้ใช้ `.env.example` เป็นต้นแบบ
+> ชื่อร้านที่แสดงบนเว็บตั้งได้ที่ `SHOP_NAME` ใน `.env` (ค่าในตัวอย่างคือ `Caffa_Unia`) ส่วนชื่อฐานข้อมูลตั้งที่ `DB_NAME` (ค่าเริ่มต้น `Caffa_Unia`)
 
 | คำสั่ง | ใช้ทำอะไร |
 |---|---|
-| `npm test` | ทดสอบอัตโนมัติ 14 กรณีกับฐานข้อมูลทดสอบ `kernel_coffee_test` (ไม่แตะข้อมูลจริง) |
+| `npm test` | ทดสอบอัตโนมัติ 14 กรณีกับฐานข้อมูลทดสอบ `<DB_NAME>_test` เช่น `Caffa_Unia_test` (ไม่แตะข้อมูลจริง) |
 | `npm run test:race` | ทดสอบ Race Condition 4 กรณี (ยิงคำขอที่ชนกันพร้อมกัน กรณีละ 15 รอบ) |
-| `npm run er` | สร้างโครง ER จากฐานข้อมูลจริง → `docs/er-diagram.dot` / `.mmd` (ไว้ตรวจเทียบกับภาพ) |
 | `npm run hash-password -- "รหัส"` | สร้าง bcrypt hash สำหรับใส่ใน SQL |
 
 ---
@@ -57,21 +63,26 @@ database/
   schema.sql              สร้างตาราง PK/FK/CHECK/INDEX ทั้งหมด
   seed.sql                ข้อมูลตัวอย่าง: 4 Role, Permission, ACL, ผู้ใช้, เมนู, ออเดอร์
   seed-files/             ภาพเมนูและสลิปตัวอย่าง (db:setup คัดลอกไปที่ storage/uploads)
-docs/
-  er-diagram.png/.svg     ER Diagram แสดง PK/FK (เส้นไม่ตัดกัน) + .dot / .mmd จากฐานข้อมูลจริง
-  access-matrix.md        Access Matrix
-  test-results.md         ผลการทดสอบ ปัญหาที่พบ ข้อจำกัด
-  demo-files/             ไฟล์สาธิตการอัปโหลด (ถูกต้อง / ปลอมนามสกุล / เกินขนาด)
+demo-files/               ไฟล์สาธิตการอัปโหลด (ถูกต้อง / ปลอมนามสกุล / เกินขนาด / ภาพเมนู)
 public/
   css/                    CSS แยกไฟล์ตามส่วน (ดูหัวข้อ 3.1)
-  js/app.js               JavaScript ฝั่ง Browser (เมนูมือถือ, ยืนยันก่อนลบ, ตาราง ACL)
+  js/app.js               JavaScript ฝั่ง Browser (เมนูมือถือ, ยืนยันก่อนลบ, ตาราง ACL, ปุ่มเลือกบัญชีทดสอบ)
+  js/boot.js              บอก CSS ว่าเปิด JavaScript อยู่ (โหลดใน <head>)
+  img/favicon.svg         ไอคอนเว็บ
+scripts/
+  db-setup.js             npm run db:setup  สร้างฐานข้อมูล + ตาราง + ข้อมูลตัวอย่าง + คัดลอกไฟล์ตัวอย่าง
+  generate-er.js          npm run er        อ่านโครงตารางจากฐานข้อมูลจริง
+  hash-password.js        npm run hash-password
 src/
   server.js               เริ่ม Server
   app.js                  ลำดับ Middleware และการแยกกลุ่ม Route
-  config.js, db.js
+  config.js               ค่าตั้งค่าทั้งหมดอ่านจาก .env
+  bootstrap.js            สร้างตาราง + ข้อมูลตัวอย่างอัตโนมัติเมื่อขึ้น Render (DB_AUTO_SETUP=true)
+  db.js                   Connection Pool ของ PostgreSQL + withTransaction()
   acl/functions.js        ทะเบียนฟังก์ชันที่ระบบรองรับ (จุดตรวจสิทธิ์)
   middleware/             auth, acl, security (CSRF/flash/จำกัดการล็อกอิน), activityLog, upload, errors
   services/               ตรรกะธุรกิจ + SQL (menu, order, file, acl, user, role, permission, audit, report)
+  utils/                  validator (ตรวจข้อมูลฝั่ง Server), format, httpError, viewHelpers
   routes/
     auth.js               /login /logout
     app/                  /app/...        ส่วนผู้ใช้ทั่วไป (menu, orders, queue, files, reports, logs, profile)
@@ -80,7 +91,10 @@ src/
     api/admin.js          /api/admin/...  REST API ส่วน Admin
   views/                  EJS (layouts, partials, app/, admin/, auth/, errors/)
 storage/uploads/          ที่เก็บไฟล์อัปโหลด (นอก public — เปิดผ่าน Route ที่ตรวจสิทธิ์เท่านั้น)
-tests/system.test.js      ทดสอบ End-to-End
+tests/
+  system.test.js          ทดสอบ End-to-End 14 กรณี (npm test)
+  race.test.js            ทดสอบ Race Condition 4 กรณี (npm run test:race)
+render.yaml               ตั้งค่าเปิดเว็บออนไลน์บน Render (หัวข้อ 14)
 ```
 
 ### 3.1 ไฟล์ CSS (แก้หน้าไหน เปิดไฟล์ของหน้านั้น)
@@ -139,7 +153,7 @@ Request
 
 - เก็บด้วย **bcrypt cost 12** (มี salt ในตัว hash) ตรวจด้วย `bcrypt.compare()`
 - ไม่แสดง hash บนเว็บหรือ API, ไม่บันทึกรหัสผ่านลง Log (`sanitize()` ตัด key ที่เกี่ยวกับ password/token/session/csrf ออก)
-- ใส่รหัสผิดได้ 8 ครั้งต่อ 10 นาที
+- ใส่รหัสผิดได้ 8 ครั้งต่อ 10 นาที (นับครั้งก่อนตรวจรหัสผ่าน จึงยิงคำขอพร้อมกันเพื่อเดารหัสเกินกำหนดไม่ได้)
 
 ---
 
@@ -158,13 +172,13 @@ users ──N:1── roles ──M:N── permissions ──M:N── app_func
 - เงื่อนไขเจ้าของข้อมูลตรวจซ้ำใน Service เช่น ลูกค้าเห็นเฉพาะออเดอร์ของตน, ห้ามตรวจสลิปออเดอร์ของตนเอง, บาริสต้าเห็นเฉพาะออเดอร์ที่ชำระแล้ว
 - ป้องกันลบ Role ที่ยังมีผู้ใช้ / Role หลัก และป้องกันการเปลี่ยนแปลงที่ทำให้ไม่มี Admin เหลือ
 
-Access Matrix ฉบับเต็ม: `docs/access-matrix.md` และหน้า `/admin/access-matrix` (คำนวณสดจากฐานข้อมูล)
+Access Matrix ฉบับเต็มดูได้ที่หน้า `/admin/access-matrix` (คำนวณสดจากฐานข้อมูล)
 
 ---
 
 ## 6. ฐานข้อมูล
 
-ER Diagram: `docs/er-diagram.png` (แสดงเฉพาะ PK และ FK ของ 14 ตาราง, ความสัมพันธ์ 19 เส้น)
+ฐานข้อมูลมี 14 ตาราง และ Foreign Key 19 เส้น (สร้างโครง ER จากฐานข้อมูลจริงได้ด้วย `npm run er`)
 
 | ตาราง | หน้าที่ |
 |---|---|
@@ -198,7 +212,7 @@ ER Diagram: `docs/er-diagram.png` (แสดงเฉพาะ PK และ FK �
 - `storage/uploads` **ไม่ได้เปิดเป็น static** เปิดได้ผ่าน `/app/files/:id` และ `/api/files/:id` ที่ตรวจสิทธิ์ทุกครั้ง
 - Log: `file.upload`, `file.upload_rejected`, `file.view`, `file.download`, `file.delete`, `file.access_denied`
 
-ไฟล์สาธิตใน `docs/demo-files/`: `slip-ตัวอย่าง.png` / `.pdf` (ถูกต้อง), `fake-image.jpg` (ข้อความเปลี่ยนนามสกุล), `too-large-5mb.png` (เกินขนาด), `menu-cf04-cappuccino.jpg` (ภาพเมนู)
+ไฟล์สาธิตใน `demo-files/`: `slip-.png` / `slip.pdf` (สลิปถูกต้อง), `fake-image.jpg` (ไฟล์ข้อความเปลี่ยนนามสกุล), `too-large-5mb.png` (เกินขนาด), `menu-cf04-cappuccino.jpg` (ภาพเมนู)
 
 ---
 
@@ -250,7 +264,7 @@ ER Diagram: `docs/er-diagram.png` (แสดงเฉพาะ PK และ FK �
 ใช้ 2 หน้าต่างเบราว์เซอร์ (หน้าต่างปกติ + Incognito) เพื่อแสดง Admin กับผู้ใช้ที่ถูกเปลี่ยนสิทธิ์ไปพร้อมกัน
 ก่อนนำเสนอรัน `npm run db:setup` เพื่อเริ่มจากข้อมูลตัวอย่างที่สะอาด
 
-1. **กระบวนการหลัก** — `customer1` สั่งเครื่องดื่ม → แนบ `docs/demo-files/slip-ตัวอย่าง.png` → `manager1` เปิดออเดอร์ ดูสลิป กด "รับออเดอร์" → `barista1` ในคิวบาร์กด เริ่มชง → ชงเสร็จ → ส่งมอบแล้ว → `customer1` ดูเส้นทางสถานะในหน้าออเดอร์
+1. **กระบวนการหลัก** — `customer1` สั่งเครื่องดื่ม → แนบ `demo-files/slip-.png` → `manager1` เปิดออเดอร์ ดูสลิป กด "รับออเดอร์" → `barista1` ในคิวบาร์กด เริ่มชง → ชงเสร็จ → ส่งมอบแล้ว → `customer1` ดูเส้นทางสถานะในหน้าออเดอร์
 2. **ความต่างของ 4 Role** — เข้าสู่ระบบทีละบัญชี ดูเมนูด้านซ้าย หน้าหลัก และกล่อง "สิทธิ์ของบัญชีนี้"
 3. **Admin เข้าถึงทุกฟังก์ชัน** — `admin` เข้า /admin จัดการผู้ใช้ Role Permission ACL และดู Access Matrix
 4. **ผู้ไม่มีสิทธิ์ถูกปฏิเสธ** — `customer1` พิมพ์ `/admin/users` → หน้า 403, เปิด `/api/admin/users` → JSON 403, เปิดออเดอร์ของ customer2 `/app/orders/4` → 403
@@ -271,7 +285,38 @@ ER Diagram: `docs/er-diagram.png` (แสดงเฉพาะ PK และ FK �
 - กัน Race Condition: เปลี่ยนสถานะออเดอร์ แนบ/ลบสลิป ล็อกแถวออเดอร์ด้วย `SELECT ... FOR UPDATE`, ตรวจจำนวน Admin ด้วย `pg_advisory_xact_lock`, นับครั้งล็อกอินก่อนตรวจรหัสผ่าน (ทดสอบด้วย `npm run test:race`)
 - ป้องกัน open redirect ในพารามิเตอร์ `next` ของหน้าเข้าสู่ระบบ, ส่งออก CSV ป้องกัน formula injection
 
-## 12. เปิดใช้งานออนไลน์ (Render)
+---
+
+## 12. การทดสอบ
+
+| คำสั่ง | ครอบคลุม | ผลล่าสุด |
+|---|---|---|
+| `npm test` | Authentication + bcrypt, ไม่ล็อกอินถูก redirect/401, ออกจากระบบแล้ว Session ใช้ต่อไม่ได้, สิทธิ์ 4 Role และส่วน Admin, กระบวนการหลักครบทุกสถานะ, ปฏิเสธ/ยกเลิกออเดอร์, เงื่อนไขเจ้าของข้อมูล, อัปโหลดไฟล์ (ถูก/ผิดชนิด/เกินขนาด/สิทธิ์เปิดไฟล์), ปิดเมนูที่หมด, เพิ่ม Role, เพิ่มและยกเลิก Permission แล้วมีผลทันที, กันการลบ Role และกันไม่ให้ไม่มี Admin, Log, CSRF | 14 / 14 ผ่าน |
+| `npm run test:race` | ยิงคำขอที่ชนกันพร้อมกัน กรณีละ 15 รอบ (ตารางด้านล่าง) | 4 / 4 ผ่าน |
+
+ทั้งสองชุดใช้ฐานข้อมูลทดสอบ `<DB_NAME>_test` (เช่น `Caffa_Unia_test`) ที่รีเซ็ตใหม่ทุกครั้ง ไม่แตะข้อมูลจริง (รันทีละคำสั่ง)
+
+| Race Condition | ก่อนแก้ | หลังแก้ |
+|---|---|---|
+| ลูกค้ากดแนบสลิปซ้ำพร้อมกัน 2 ครั้ง | สลิปค้าง 2 ไฟล์ 14/15 รอบ | เหลือสลิปเดียวทุกรอบ |
+| ลูกค้าลบสลิปพร้อมกับผู้จัดการกดรับออเดอร์ | รับแล้วแต่ไม่มีสลิป 15/15 รอบ | ไม่เกิด |
+| Admin 2 คนลดสิทธิ์กันเองพร้อมกัน | ไม่เหลือ Admin 14/15 รอบ | เหลือ Admin เสมอ |
+| ยิงรหัสผ่านผิด 30 ครั้งพร้อมกัน | ตรวจรหัสครบ 30 ครั้ง | ตรวจ 8 ครั้ง ถูกบล็อก 22 ครั้ง |
+
+วิธีแก้: แนบ/ลบสลิปและเปลี่ยนสถานะออเดอร์ทำใน Transaction ที่ล็อกแถวออเดอร์ด้วย `SELECT ... FOR UPDATE`, ตรวจจำนวน Admin หลัง `pg_advisory_xact_lock`, นับครั้งล็อกอินก่อนตรวจรหัสผ่าน, อ่านเมนูตอนสั่งด้วย `FOR SHARE`
+
+---
+
+## 13. ข้อจำกัดของระบบ
+
+- ตรวจสลิปด้วยตาของผู้จัดการ ยังไม่ได้เชื่อมธนาคารหรือบริการตรวจสลิปจริง
+- ไม่มีการแจ้งเตือนแบบเรียลไทม์ ลูกค้าและบาริสต้าต้องรีเฟรชหน้าเพื่อดูสถานะล่าสุด
+- ตัวนับการเข้าสู่ระบบผิดเก็บในหน่วยความจำของ Server (รีเซ็ตเมื่อเริ่ม Server ใหม่ และถ้ารันหลายเครื่องต้องย้ายไปเก็บในฐานข้อมูลหรือ Redis)
+- บัญชีพร้อมเพย์ในหน้าแนบสลิปเป็นค่าตัวอย่าง ตั้งได้ใน `.env`
+
+---
+
+## 14. เปิดใช้งานออนไลน์ (Render)
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/NuTTha933/caffa-unia)
 

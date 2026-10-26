@@ -1,6 +1,3 @@
-// =====================================================================
-//  ไฟล์อัปโหลด : ตรวจชนิดจาก "เนื้อไฟล์" (magic bytes) + ขนาด, ตั้งชื่อไม่ซ้ำ, เก็บนอก public
-// =====================================================================
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
@@ -20,7 +17,6 @@ const TYPE_LABEL = {
   'application/pdf': 'PDF',
 };
 
-// ตรวจชนิดไฟล์จากไบต์แรกของไฟล์ (ไม่เชื่อนามสกุลหรือ Content-Type ที่ Browser ส่งมา)
 function detectType(buf) {
   if (!buf || buf.length < 12) return null;
   if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return { mime: 'image/jpeg', ext: 'jpg' };
@@ -34,10 +30,9 @@ function detectType(buf) {
   return null;
 }
 
-// ทำความสะอาดชื่อไฟล์เดิม (ใช้แสดงผลเท่านั้น ไม่ใช้เป็น path)
 function safeOriginalName(name) {
   let s = String(name || 'file');
-  s = path.basename(s.replace(/\\/g, '/')); // ตัด path ออก กัน ../../ หรือ C:\...
+  s = path.basename(s.replace(/\\/g, '/'));
   s = s.replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, '_').trim();
   if (!s || s === '.' || s === '..') s = 'file';
   return s.length > 200 ? s.slice(-200) : s;
@@ -70,10 +65,6 @@ async function rejectUpload(req, kind, file, reason, message, extra = {}) {
   return badRequest(message);
 }
 
-/**
- * ตรวจและบันทึกไฟล์ที่อัปโหลด (ไฟล์อยู่ในหน่วยความจำจาก multer)
- * @returns แถวข้อมูลไฟล์ในตาราง files
- */
 async function saveUpload(req, { kind, file, menuItemId = null, orderId = null, client = db }) {
   const rule = config.upload.rules[kind];
   const target = { resourceType: menuItemId ? 'menu' : 'order', resourceId: menuItemId || orderId };
@@ -92,7 +83,7 @@ async function saveUpload(req, { kind, file, menuItemId = null, orderId = null, 
   const storedName = `${crypto.randomUUID()}.${type.ext}`;
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
   const fullPath = storedPath(storedName);
-  await fs.writeFile(fullPath, file.buffer, { flag: 'wx' }); // wx = ห้ามเขียนทับไฟล์ที่มีอยู่
+  await fs.writeFile(fullPath, file.buffer, { flag: 'wx' });
 
   try {
     const row = (await client.query(

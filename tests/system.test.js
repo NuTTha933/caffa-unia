@@ -1,10 +1,6 @@
-// =====================================================================
-//  ทดสอบระบบแบบ End-to-End กับฐานข้อมูลทดสอบจริง (PostgreSQL)
-//  รัน: npm test   (ใช้ฐานข้อมูล <DB_NAME>_test แยกจากข้อมูลจริง และรีเซ็ตทุกครั้ง)
-// =====================================================================
 process.env.NODE_ENV = 'test';
 require('dotenv').config({ quiet: true });
-process.env.DB_NAME = `${process.env.DB_NAME || 'kernel_coffee'}_test`;
+process.env.DB_NAME = `${process.env.DB_NAME || 'Caffa_Unia'}_test`;
 process.env.UPLOAD_DIR = 'storage/test-uploads';
 
 const { test, before, after } = require('node:test');
@@ -13,7 +9,6 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const request = require('supertest');
 
-// รีเซ็ตฐานข้อมูลทดสอบด้วยสคริปต์เดียวกับที่ใช้ติดตั้งจริง
 const setup = spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'db-setup.js')], {
   env: process.env, encoding: 'utf8',
 });
@@ -54,7 +49,6 @@ after(async () => {
   await db.pool.end();
 });
 
-// ---------------------------------------------------------------------
 test('1. Authentication: รหัสผ่านเก็บเป็น bcrypt hash, เข้าสู่ระบบสำเร็จ/ล้มเหลว และบันทึก Log', async () => {
   const users = (await db.query('SELECT username, password_hash FROM users')).rows;
   assert.equal(users.length, 6);
@@ -117,7 +111,6 @@ test('4. สิทธิ์ 4 Role แตกต่างกัน และส�
   assert.equal((await admin.get('/admin/acl')).status, 200);
   assert.equal((await admin.get('/api/admin/users')).status, 200);
 
-  // ความแตกต่างของสิทธิ์งาน
   assert.equal((await customer.get('/app/orders/new')).status, 200);
   assert.equal((await manager.get('/app/orders/new')).status, 403, 'ผู้จัดการไม่ได้สั่งเครื่องดื่ม');
   assert.equal((await barista.get('/app/queue')).status, 200);
@@ -130,7 +123,6 @@ test('4. สิทธิ์ 4 Role แตกต่างกัน และส�
   assert.equal((await manager.get('/app/reports')).status, 403, 'รายงานยังไม่ถูกกำหนดให้ Role ใด');
   assert.equal((await admin.get('/app/reports')).status, 200, 'Admin ใช้ได้ทุกฟังก์ชัน');
 
-  // API ไม่คืน password_hash
   const users = await admin.get('/api/admin/users');
   assert.ok(!JSON.stringify(users.body).includes('password'));
   assert.ok(await logCount('access_denied') >= 9);
@@ -144,7 +136,6 @@ test('5. กระบวนการหลัก: สั่ง → แนบส�
   const croissant = await menuId('BK-01');
   const soldOut = await menuId('TE-03');
 
-  // ตรวจข้อมูลฝั่ง Server
   const empty = await customer.post('/app/orders').type('form').send({ _csrf: customer.csrf });
   assert.equal(empty.status, 422);
   assert.match(empty.text, /กรุณาเลือกอย่างน้อย 1 รายการ/);
@@ -154,7 +145,6 @@ test('5. กระบวนการหลัก: สั่ง → แนบส�
   const tooMany = await customer.post('/app/orders').type('form').send({ _csrf: customer.csrf, [`qty[m${latte}]`]: '99' });
   assert.equal(tooMany.status, 422);
 
-  // ราคาคิดจากฐานข้อมูล ไม่เชื่อค่าที่ Browser ส่งมา
   const created = await customer.post('/app/orders').type('form').send({
     _csrf: customer.csrf, [`qty[m${latte}]`]: '2', [`qty[m${croissant}]`]: '1',
     total_amount: '1', note: 'รับตอนบ่ายโมง',
@@ -169,7 +159,6 @@ test('5. กระบวนการหลัก: สั่ง → แนบส�
   assert.equal(lines.find((l) => l.menu_item_id === latte).quantity, 2);
   assert.equal(Number(lines.find((l) => l.menu_item_id === latte).unit_price), 75, 'เก็บราคา ณ เวลาที่สั่ง');
 
-  // ยังไม่แนบสลิป → ผู้จัดการรับออเดอร์ไม่ได้ (Server ตรวจเอง)
   const early = await manager.post(`/app/orders/${id}/accept`).type('form').send({ _csrf: manager.csrf });
   assert.equal(early.status, 302);
   assert.equal(await statusOf(id), 'pending');
@@ -179,10 +168,8 @@ test('5. กระบวนการหลัก: สั่ง → แนบส�
     .attach('slip', PNG, { filename: 'สลิป.png', contentType: 'image/png' });
   assert.equal(slip.status, 302);
 
-  // บาริสต้าตรวจสลิปไม่ได้, ลูกค้าเริ่มชงเองไม่ได้
   assert.equal((await barista.post(`/app/orders/${id}/accept`).type('form').send({ _csrf: barista.csrf })).status, 403);
   assert.equal((await customer.post(`/app/orders/${id}/brew`).type('form').send({ _csrf: customer.csrf })).status, 403);
-  // ก่อนรับออเดอร์ บาริสต้ายังมองไม่เห็น (ไม่อยู่ในคิว)
   assert.equal((await barista.get(`/app/orders/${id}`)).status, 403);
 
   assert.equal((await manager.post(`/app/orders/${id}/accept`).type('form').send({ _csrf: manager.csrf })).status, 302);
@@ -196,7 +183,6 @@ test('5. กระบวนการหลัก: สั่ง → แนบส�
     assert.equal(r.headers.location, '/app/queue');
     assert.equal(await statusOf(id), expected);
   }
-  // ทำซ้ำขั้นเดิมไม่ได้
   await barista.post(`/app/orders/${id}/complete`).type('form').send({ _csrf: barista.csrf });
   assert.equal(await statusOf(id), 'completed');
 
@@ -218,7 +204,6 @@ test('6. ปฏิเสธสลิปต้องมีเหตุผล แ�
   await manager.post(`/app/orders/${pending4.id}/reject`).type('form').send({ _csrf: manager.csrf, note: '' });
   assert.equal(await statusOf(pending4.id), 'pending', 'ไม่มีเหตุผล → ไม่บันทึก');
 
-  // customer1 ยกเลิกออเดอร์ของ customer2 ไม่ได้
   assert.equal((await customer1.post(`/app/orders/${pending4.id}/cancel`).type('form').send({ _csrf: customer1.csrf })).status, 403);
   assert.equal(await statusOf(pending4.id), 'pending');
 
@@ -226,7 +211,6 @@ test('6. ปฏิเสธสลิปต้องมีเหตุผล แ�
   assert.equal(cancel.status, 302);
   assert.equal(await statusOf(pending4.id), 'cancelled');
 
-  // สร้างออเดอร์ใหม่แล้วให้ผู้จัดการปฏิเสธพร้อมเหตุผล
   const created = await customer2.post('/app/orders').type('form').send({ _csrf: customer2.csrf, [`qty[m${await menuId('MK-01')}]`]: '1' });
   const id = Number(created.headers.location.split('/').pop());
   await manager.post(`/app/orders/${id}/reject`).type('form').send({ _csrf: manager.csrf, note: 'ยอดโอนไม่ตรง' });
@@ -270,7 +254,6 @@ test('8. อัปโหลดไฟล์: ถูกต้อง/ผิดช�
   assert.equal(file.uploaded_by, (await one(`SELECT id FROM users WHERE username='customer1'`)).id);
   assert.match(file.stored_name, /^[0-9a-f-]{36}\.pdf$/, 'ชื่อไฟล์จัดเก็บเป็น UUID ไม่ชนกัน');
 
-  // ไฟล์ข้อความที่ตั้งชื่อ .jpg → ตรวจจากเนื้อไฟล์แล้วปฏิเสธ, ไฟล์เกิน 3 MB → ปฏิเสธ
   const fake = await customer1.post(url).attach('slip', Buffer.from('MZ this is not an image at all......'), { filename: 'slip.jpg', contentType: 'image/jpeg' });
   assert.equal(fake.status, 302);
   const big = await customer1.post(url).attach('slip', Buffer.concat([PNG, Buffer.alloc(4 * 1024 * 1024)]), { filename: 'big.png', contentType: 'image/png' });
@@ -279,10 +262,8 @@ test('8. อัปโหลดไฟล์: ถูกต้อง/ผิดช�
   assert.equal(await logCount('file.upload_rejected') - rejectedBefore, 2);
   assert.match((await customer1.get(`/app/orders/${id}`)).text, /เกินกำหนด|ชนิดไฟล์ไม่ได้รับอนุญาต/);
 
-  // customer2 แนบสลิปในออเดอร์ของ customer1 ไม่ได้
   assert.equal((await customer2.post(`/app/orders/${id}/slip?_csrf=${customer2.csrf}`).attach('slip', PNG, { filename: 'x.png', contentType: 'image/png' })).status, 403);
 
-  // เปิด/ดาวน์โหลดตามสิทธิ์
   const own = await customer1.get(`/app/files/${file.id}`);
   assert.equal(own.status, 200);
   assert.equal(own.headers['content-type'], 'application/pdf');
@@ -294,13 +275,11 @@ test('8. อัปโหลดไฟล์: ถูกต้อง/ผิดช�
   assert.equal((await request(app).get(`/storage/uploads/${file.stored_name}`)).status, 404, 'โฟลเดอร์เก็บไฟล์ไม่ถูกเปิดเป็น static');
   assert.ok(await logCount('file.access_denied') >= 3);
 
-  // ลบสลิปของตนเองขณะรอตรวจได้ แล้วแนบใหม่ได้
   assert.equal((await customer2.post(`/app/files/${file.id}/delete`).type('form').send({ _csrf: customer2.csrf })).status, 403);
   assert.equal((await customer1.post(`/app/files/${file.id}/delete`).type('form').send({ _csrf: customer1.csrf })).status, 302);
   assert.equal((await one('SELECT COUNT(*) AS n FROM files WHERE order_id=$1', [id])).n, 0);
   assert.ok(await logCount('file.delete') >= 1);
 
-  // ภาพเมนู (ผู้จัดการ): PNG ผ่าน, GIF ไม่ผ่าน; บาริสต้าอัปโหลดไม่ได้แต่เปิดดูได้
   const menu = await menuId('CF-04');
   const img = await manager.post(`/app/menu/${menu}/image?_csrf=${manager.csrf}`).attach('image', PNG, { filename: 'cappuccino.png', contentType: 'image/png' });
   assert.equal(img.status, 302);
@@ -355,7 +334,6 @@ test('11. เพิ่ม Permission ผ่านเว็บ เชื่อม
 
   assert.equal((await tester.get('/app/reports')).status, 403);
 
-  // Permission ที่ยังไม่เชื่อมฟังก์ชัน ไม่เปิดสิทธิ์อะไร
   await admin.post('/admin/permissions').type('form').send({ _csrf: admin.csrf, code: 'report.dummy', name: 'ยังไม่เชื่อม' });
   const dummy = await one(`SELECT id FROM permissions WHERE code='report.dummy'`);
   const created = await admin.post('/admin/permissions').type('form').send({
@@ -422,7 +400,6 @@ test('13. Log: กรองดูย้อนหลังได้ จำกั�
   const byUser = await admin.get(`/api/logs?user_id=${(await one(`SELECT id FROM users WHERE username='barista1'`)).id}`);
   assert.ok(byUser.body.data.length > 0 && byUser.body.data.every((l) => l.username === 'barista1'));
 
-  // ผู้จัดการเห็นเฉพาะหมวดงาน ไม่เห็น auth/admin
   const mgr = await manager.get('/api/logs?category=auth');
   assert.ok(mgr.body.data.every((l) => ['order', 'menu', 'file'].includes(l.category)));
 

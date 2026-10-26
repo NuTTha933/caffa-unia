@@ -1,23 +1,15 @@
-// =====================================================================
-//  Middleware : รับไฟล์อัปโหลด (multer) — จำกัดขนาดตั้งแต่ตอนรับข้อมูล
-//  การตรวจชนิดไฟล์จากเนื้อไฟล์จริงทำต่อใน fileService.saveUpload()
-// =====================================================================
 const multer = require('multer');
 const config = require('../config');
 const { audit } = require('../services/auditService');
 const { describeRule } = require('../services/fileService');
 const { badRequest } = require('../utils/httpError');
 
-/**
- * @param {'menu_image'|'payment_slip'} kind
- * @param {object} opts { field, resourceType, redirect(req) → ถ้ากำหนด จะ flash ข้อความแล้ว redirect กลับ }
- */
 function uploadSingle(kind, { field = 'file', resourceType, redirect } = {}) {
   const rule = config.upload.rules[kind];
   const receive = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: rule.maxBytes, files: 1, fields: 10 },
-    defParamCharset: 'utf8', // รองรับชื่อไฟล์ภาษาไทย
+    defParamCharset: 'utf8',
   }).single(field);
 
   return function uploadMiddleware(req, res, next) {

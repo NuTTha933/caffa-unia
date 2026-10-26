@@ -1,4 +1,3 @@
-// ค่าตั้งค่าทั้งหมดอ่านจากไฟล์ .env (ดูตัวอย่างใน .env.example) — ไม่ใส่รหัสผ่านจริงไว้ในโค้ด
 const path = require('path');
 const crypto = require('crypto');
 require('dotenv').config({ quiet: true });
@@ -27,7 +26,6 @@ module.exports = {
   timezone: 'Asia/Bangkok',
   root,
 
-  // ถ้ามี DATABASE_URL (เช่นบน Render) ใช้ค่านั้น ไม่งั้นใช้ DB_* ในไฟล์ .env
   db: process.env.DATABASE_URL
     ? {
       connectionString: process.env.DATABASE_URL,
@@ -36,24 +34,22 @@ module.exports = {
     : {
       host: process.env.DB_HOST || 'localhost',
       port: int(process.env.DB_PORT, 5432),
-      database: process.env.DB_NAME || 'kernel_coffee',
+      database: process.env.DB_NAME || 'Caffa_Unia',
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || '',
     },
 
-  // กล่องบัญชีทดสอบในหน้าเข้าสู่ระบบ: แสดงในโหมดพัฒนา หรือเมื่อตั้ง SHOW_DEMO_ACCOUNTS=true (เว็บสาธิต)
   showDemoAccounts: env !== 'production' || process.env.SHOW_DEMO_ACCOUNTS === 'true',
 
   session: {
     secret: sessionSecret,
-    cookieName: 'kc.sid',
+    cookieName: 'caffa_unia.sid',
     maxAgeMs: int(process.env.SESSION_MAX_AGE_MIN, 120) * 60 * 1000,
     secureCookie: process.env.COOKIE_SECURE === 'true',
   },
 
   upload: {
     dir: path.resolve(root, process.env.UPLOAD_DIR || 'storage/uploads'),
-    // กำหนดชนิดไฟล์และขนาดสูงสุดแยกตามประเภทไฟล์
     rules: {
       menu_image: {
         label: 'ภาพเมนู',
@@ -68,9 +64,8 @@ module.exports = {
     },
   },
 
-  // ข้อมูลร้าน (ใช้แสดงในหน้าแนบสลิป) — บัญชีตัวอย่างสำหรับงานโครงงานเท่านั้น
   shop: {
-    name: process.env.SHOP_NAME || 'Kernel Coffee',
+    name: process.env.SHOP_NAME || 'Caffa_Unia',
     promptpay: process.env.SHOP_PROMPTPAY || '0-0000-00000-00-0 (บัญชีตัวอย่าง)',
   },
 

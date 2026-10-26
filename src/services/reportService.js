@@ -1,5 +1,3 @@
-// รายงานยอดขาย (ฟังก์ชัน report.sales — ใช้สาธิตการเพิ่ม Permission ใหม่ผ่านเว็บ)
-// ยอดขาย = ออเดอร์ที่ร้านรับเงินแล้ว (รอชง/กำลังชง/พร้อมรับ/รับแล้ว) ตัวเลขทั้งหมดคำนวณจากฐานข้อมูลจริง
 const db = require('../db');
 
 const PAID = `o.status IN ('accepted','brewing','ready','completed')`;

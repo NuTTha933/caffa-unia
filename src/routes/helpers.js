@@ -1,7 +1,5 @@
-// ตัวช่วยที่ใช้ร่วมกันใน Route
 const { notFound } = require('../utils/httpError');
 
-// อ่าน :id ที่เป็นจำนวนเต็มบวก (ไม่ใช่ตัวเลข → 404)
 function idParam(req, name = 'id') {
   const s = String(req.params[name] || '');
   if (!/^\d{1,9}$/.test(s) || Number(s) < 1) throw notFound();
@@ -13,10 +11,6 @@ function pageParam(req) {
   return Number.isFinite(n) && n > 0 ? Math.min(n, 100000) : 1;
 }
 
-/**
- * ห่อ handler ของปุ่มดำเนินการ: ถ้าเกิดข้อผิดพลาดทางธุรกิจ (400/409/422)
- * ให้แสดงข้อความแบบ flash แล้วกลับไปหน้าเดิม — ส่วน 403/404/500 ส่งต่อ errorHandler
- */
 function withFlashBack(handler, back) {
   return async (req, res, next) => {
     try {
@@ -32,7 +26,6 @@ function withFlashBack(handler, back) {
   };
 }
 
-// เส้นทางสำหรับ redirect หลังเข้าสู่ระบบ (กัน open redirect)
 function safeNext(value) {
   const s = String(value || '');
   if (!s.startsWith('/') || s.startsWith('//') || s.startsWith('/\\') || s.length > 300) return null;

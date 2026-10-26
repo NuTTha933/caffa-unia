@@ -1,9 +1,3 @@
--- =====================================================================
---  Kernel Coffee — ระบบจัดการร้านกาแฟ (สั่งเครื่องดื่ม + แนบสลิป + คิวบาร์)
---  Database Schema · PostgreSQL 13+ (ใช้ gen_random_uuid() ที่มีในตัวตั้งแต่ PG13)
---  คำเตือน: ไฟล์นี้ DROP ตารางเดิมทั้งหมดก่อนสร้างใหม่ (ใช้สำหรับติดตั้ง/รีเซ็ต)
--- =====================================================================
-
 DROP TABLE IF EXISTS audit_logs            CASCADE;
 DROP TABLE IF EXISTS files                 CASCADE;
 DROP TABLE IF EXISTS order_status_history  CASCADE;
@@ -20,9 +14,6 @@ DROP TABLE IF EXISTS roles                 CASCADE;
 DROP TABLE IF EXISTS user_sessions         CASCADE;
 DROP FUNCTION IF EXISTS set_updated_at()   CASCADE;
 
--- ---------------------------------------------------------------------
--- อัปเดตคอลัมน์ updated_at อัตโนมัติ
--- ---------------------------------------------------------------------
 CREATE FUNCTION set_updated_at() RETURNS trigger AS $$
 BEGIN
   NEW.updated_at := now();
@@ -30,26 +21,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- =====================================================================
---  ส่วนที่ 1 : Authentication / Authorization (Role, Permission, ACL)
--- =====================================================================
-
--- บทบาท (Role) — Admin จัดการผ่านเว็บได้
 CREATE TABLE roles (
   id          SERIAL PRIMARY KEY,
   code        VARCHAR(50)  NOT NULL UNIQUE
               CHECK (code ~ '^[a-z][a-z0-9_]{1,49}$'),
   name        VARCHAR(100) NOT NULL,
   description TEXT,
-  is_admin    BOOLEAN      NOT NULL DEFAULT FALSE,   -- TRUE = ได้ทุกสิทธิ์อัตโนมัติ (รวมฟังก์ชันที่เพิ่มภายหลัง)
-  is_system   BOOLEAN      NOT NULL DEFAULT FALSE,   -- TRUE = Role ระบบ ห้ามลบ
+  is_admin    BOOLEAN      NOT NULL DEFAULT FALSE,
+  is_system   BOOLEAN      NOT NULL DEFAULT FALSE,
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 CREATE TRIGGER trg_roles_updated BEFORE UPDATE ON roles
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- รายการ Permission — Admin เพิ่ม/แก้ไข/ลบผ่านเว็บได้ เช่น menu.read, order.review
 CREATE TABLE permissions (
   id          SERIAL PRIMARY KEY,
   code        VARCHAR(100) NOT NULL UNIQUE
@@ -62,8 +47,6 @@ CREATE TABLE permissions (
 CREATE TRIGGER trg_permissions_updated BEFORE UPDATE ON permissions
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- ฟังก์ชัน/API ที่ระบบรองรับและถูกป้องกันในโค้ด (จุดตรวจสิทธิ์ใน Middleware)
--- เช่น order.review = POST /app/orders/:id/accept|reject และ POST /api/orders/:id/accept|reject
 CREATE TABLE app_functions (
   id          SERIAL PRIMARY KEY,
   code        VARCHAR(100) NOT NULL UNIQUE,
@@ -74,14 +57,12 @@ CREATE TABLE app_functions (
   sort_order  INTEGER      NOT NULL DEFAULT 0
 );
 
--- Permission ↔ ฟังก์ชัน (Permission หนึ่งเปิดได้หลายฟังก์ชัน) — แก้ผ่านเว็บได้
 CREATE TABLE permission_functions (
   permission_id INTEGER NOT NULL REFERENCES permissions(id)   ON DELETE CASCADE,
   function_id   INTEGER NOT NULL REFERENCES app_functions(id) ON DELETE CASCADE,
   PRIMARY KEY (permission_id, function_id)
 );
 
--- ผู้ใช้ (1 คน มี 1 Role)
 CREATE TABLE users (
   id            SERIAL PRIMARY KEY,
   username      VARCHAR(50)  NOT NULL UNIQUE
@@ -89,7 +70,7 @@ CREATE TABLE users (
   full_name     VARCHAR(150) NOT NULL,
   email         VARCHAR(150) UNIQUE,
   phone         VARCHAR(20)  CHECK (phone IS NULL OR phone ~ '^[0-9+\- ]{9,20}$'),
-  password_hash VARCHAR(255) NOT NULL,              -- bcrypt (มี salt ในตัว) ไม่เก็บรหัสผ่านจริง
+  password_hash VARCHAR(255) NOT NULL,
   role_id       INTEGER      NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
   is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
   last_login_at TIMESTAMPTZ,
@@ -100,7 +81,6 @@ CREATE INDEX idx_users_role ON users(role_id);
 CREATE TRIGGER trg_users_updated BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- ACL : Role ↔ Permission (ตาราง Role × Permission ในหน้า /admin/acl)
 CREATE TABLE role_permissions (
   role_id       INTEGER     NOT NULL REFERENCES roles(id)       ON DELETE CASCADE,
   permission_id INTEGER     NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
@@ -110,18 +90,12 @@ CREATE TABLE role_permissions (
 );
 CREATE INDEX idx_role_permissions_perm ON role_permissions(permission_id);
 
--- =====================================================================
---  ส่วนที่ 2 : ระบบงานร้านกาแฟ
--- =====================================================================
-
--- หมวดเมนู (กาแฟ / ชา / นมและช็อกโกแลต / เบเกอรี่)
 CREATE TABLE menu_categories (
   id         SERIAL PRIMARY KEY,
   name       VARCHAR(80) NOT NULL UNIQUE,
   sort_order INTEGER     NOT NULL DEFAULT 0
 );
 
--- เมนู
 CREATE TABLE menu_items (
   id           SERIAL PRIMARY KEY,
   code         VARCHAR(20)   NOT NULL UNIQUE CHECK (code ~ '^[A-Z0-9-]{2,20}$'),
@@ -129,7 +103,7 @@ CREATE TABLE menu_items (
   category_id  INTEGER       NOT NULL REFERENCES menu_categories(id) ON DELETE RESTRICT,
   description  TEXT,
   price        NUMERIC(8,2)  NOT NULL CHECK (price > 0 AND price <= 9999),
-  is_available BOOLEAN       NOT NULL DEFAULT TRUE,     -- FALSE = หมดชั่วคราว (บาริสต้าปิดได้)
+  is_available BOOLEAN       NOT NULL DEFAULT TRUE,
   created_by   INTEGER       REFERENCES users(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ   NOT NULL DEFAULT now()
@@ -138,19 +112,16 @@ CREATE INDEX idx_menu_category ON menu_items(category_id);
 CREATE TRIGGER trg_menu_updated BEFORE UPDATE ON menu_items
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- ออเดอร์ (กระบวนการหลัก)
--- pending (รอตรวจสลิป) → accepted (ชำระแล้ว รอชง) → brewing → ready → completed
---                      ↘ rejected (สลิปไม่ผ่าน)      ↘ cancelled (ลูกค้ายกเลิกก่อนตรวจ)
 CREATE TABLE orders (
   id            SERIAL PRIMARY KEY,
   customer_id   INTEGER      NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   status        VARCHAR(20)  NOT NULL DEFAULT 'pending'
                 CHECK (status IN ('pending','accepted','rejected','brewing','ready','completed','cancelled')),
   total_amount  NUMERIC(10,2) NOT NULL CHECK (total_amount > 0),
-  note          TEXT,                                   -- หมายเหตุจากลูกค้า เช่น เวลามารับ
+  note          TEXT,
   reviewed_by   INTEGER      REFERENCES users(id) ON DELETE SET NULL,
   reviewed_at   TIMESTAMPTZ,
-  review_note   TEXT,                                   -- เหตุผลเมื่อปฏิเสธสลิป
+  review_note   TEXT,
   barista_id    INTEGER      REFERENCES users(id) ON DELETE SET NULL,
   brewing_at    TIMESTAMPTZ,
   ready_at      TIMESTAMPTZ,
@@ -167,7 +138,6 @@ CREATE INDEX idx_orders_created  ON orders(created_at DESC);
 CREATE TRIGGER trg_orders_updated BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- รายการในออเดอร์ (เก็บชื่อและราคา ณ เวลาสั่ง — แก้ราคาเมนูภายหลังไม่กระทบออเดอร์เดิม)
 CREATE TABLE order_items (
   id            SERIAL PRIMARY KEY,
   order_id      INTEGER      NOT NULL REFERENCES orders(id)     ON DELETE CASCADE,
@@ -180,7 +150,6 @@ CREATE TABLE order_items (
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_order_items_menu  ON order_items(menu_item_id);
 
--- ประวัติการเปลี่ยนสถานะ (ใช้แสดงเส้นทางสถานะของออเดอร์)
 CREATE TABLE order_status_history (
   id          SERIAL PRIMARY KEY,
   order_id    INTEGER     NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -192,9 +161,6 @@ CREATE TABLE order_status_history (
 );
 CREATE INDEX idx_history_order ON order_status_history(order_id);
 
--- ไฟล์ที่อัปโหลด (เก็บไฟล์จริงใน storage/uploads นอกโฟลเดอร์ public)
---   menu_image   : ภาพเมนู      → ผูกกับ menu_items
---   payment_slip : สลิปโอนเงิน → ผูกกับ orders (จำกัดสิทธิ์: เจ้าของออเดอร์ / ผู้ตรวจสลิป)
 CREATE TABLE files (
   id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   kind          VARCHAR(20)  NOT NULL CHECK (kind IN ('menu_image', 'payment_slip')),
@@ -206,7 +172,6 @@ CREATE TABLE files (
   order_id      INTEGER      REFERENCES orders(id)     ON DELETE CASCADE,
   uploaded_by   INTEGER      REFERENCES users(id)      ON DELETE SET NULL,
   uploaded_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
-  -- ไฟล์ต้องผูกกับรายการงานอย่างใดอย่างหนึ่งเท่านั้น
   CONSTRAINT chk_files_owner CHECK (
        (kind = 'menu_image'   AND menu_item_id IS NOT NULL AND order_id IS NULL)
     OR (kind = 'payment_slip' AND order_id     IS NOT NULL AND menu_item_id IS NULL)
@@ -215,17 +180,14 @@ CREATE TABLE files (
 CREATE INDEX idx_files_menu  ON files(menu_item_id);
 CREATE INDEX idx_files_order ON files(order_id);
 
--- =====================================================================
---  ส่วนที่ 3 : Log การใช้งาน (ไม่เก็บรหัสผ่าน / Session ID / Token)
--- =====================================================================
 CREATE TABLE audit_logs (
   id            BIGSERIAL    PRIMARY KEY,
   created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
   user_id       INTEGER      REFERENCES users(id) ON DELETE SET NULL,
-  username      VARCHAR(100),          -- ผู้กระทำ หรือชื่อบัญชีที่พยายามเข้าสู่ระบบ
+  username      VARCHAR(100),
   role_code     VARCHAR(50),
-  category      VARCHAR(30)  NOT NULL, -- auth, order, menu, file, admin, access, navigation
-  action        VARCHAR(60)  NOT NULL, -- login_success, order.accept, acl.grant, access_denied ...
+  category      VARCHAR(30)  NOT NULL,
+  action        VARCHAR(60)  NOT NULL,
   resource_type VARCHAR(50),
   resource_id   VARCHAR(64),
   result        VARCHAR(20)  NOT NULL CHECK (result IN ('success', 'failure', 'denied')),
@@ -240,9 +202,6 @@ CREATE INDEX idx_logs_user     ON audit_logs(user_id);
 CREATE INDEX idx_logs_category ON audit_logs(category);
 CREATE INDEX idx_logs_action   ON audit_logs(action);
 
--- =====================================================================
---  ส่วนที่ 4 : Session store (connect-pg-simple)
--- =====================================================================
 CREATE TABLE user_sessions (
   sid    VARCHAR      NOT NULL PRIMARY KEY,
   sess   JSON         NOT NULL,

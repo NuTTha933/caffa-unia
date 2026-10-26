@@ -1,7 +1,3 @@
-// =====================================================================
-//  REST API /api/... (ใช้ Session เดียวกับหน้าเว็บ) — ตรวจสิทธิ์ด้วย Middleware ชุดเดียวกัน
-//  ไม่มีสิทธิ์ → 403 JSON, ยังไม่เข้าสู่ระบบ → 401 JSON
-// =====================================================================
 const express = require('express');
 const menuService = require('../../services/menuService');
 const orderService = require('../../services/orderService');
@@ -26,7 +22,6 @@ router.get('/me', (req, res) => {
   });
 });
 
-// ---------------- เมนู ----------------
 const menuJson = (m) => ({
   id: m.id, code: m.code, name: m.name, category: m.category_name, description: m.description,
   price: Number(m.price), is_available: m.is_available,
@@ -64,7 +59,6 @@ router.delete('/menu/:id', authorize('menu.delete'), async (req, res) => {
   res.json({ ok: true });
 });
 
-// ---------------- ออเดอร์ ----------------
 const orderJson = (o) => ({
   id: o.id, order_no: orderNo(o.id), status: o.status, total_amount: Number(o.total_amount),
   customer: { id: o.customer_id, username: o.customer_username, full_name: o.customer_name },
@@ -133,7 +127,6 @@ router.delete('/orders/:id', authorize('order.delete'), async (req, res) => {
   res.json({ ok: true });
 });
 
-// ---------------- ไฟล์ ----------------
 router.get('/files/:id', authorize('slip.view', 'menu.view'), async (req, res) => {
   const file = await fileService.getFile(req.params.id);
   await orderService.assertCanViewFile(req.user, file);
@@ -151,7 +144,6 @@ router.delete('/files/:id', authorize('slip.delete'), async (req, res) => {
   res.json({ ok: true, order_id: orderId });
 });
 
-// ---------------- รายงาน / Log ----------------
 router.get('/reports/sales', authorize('report.sales'), async (req, res) => {
   res.json({ data: await reportService.sales() });
 });

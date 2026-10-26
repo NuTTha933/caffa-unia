@@ -1,4 +1,3 @@
-// Error ที่มีรหัส HTTP และข้อความภาษาไทยที่แสดงให้ผู้ใช้เห็นได้
 class HttpError extends Error {
   constructor(status, message, extra = {}) {
     super(message);

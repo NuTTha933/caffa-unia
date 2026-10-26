@@ -1,10 +1,3 @@
-// =====================================================================
-//  ทะเบียน "ฟังก์ชันที่ระบบรองรับ" (Protected Functions)
-//  - ทุก Route/API ที่ต้องตรวจสิทธิ์จะเรียก authorize('<code>') ด้วยรหัสในรายการนี้
-//  - Admin เชื่อม Permission (ข้อมูลในฐานข้อมูล) เข้ากับฟังก์ชันเหล่านี้ผ่านหน้าเว็บ
-//  - ตอนเริ่ม Server ระบบจะ sync รายการนี้ลงตาราง app_functions อัตโนมัติ
-//    (ถ้าเพิ่มฟังก์ชันใหม่ในโค้ดภายหลัง Admin จะใช้ได้ทันทีเพราะ is_admin ได้ทุกฟังก์ชัน)
-// =====================================================================
 const FUNCTIONS = [
   ['menu.view',        'ดูเมนูและภาพเมนู', 'menu', 'GET /app/menu, GET /app/menu/:id, GET /api/menu, GET /api/menu/:id'],
   ['menu.create',      'เพิ่มเมนู', 'menu', 'GET|POST /app/menu/new, POST /api/menu'],
@@ -38,12 +31,10 @@ const FUNCTIONS = [
   ['admin.acl',         'กำหนดสิทธิ์ ACL (Role × Permission) และดู Access Matrix', 'admin', '/admin/acl, /admin/access-matrix, /api/admin/acl'],
 ].map(([code, name, module, endpoints], i) => ({ code, name, module, endpoints, sortOrder: i + 1 }));
 
-// ฟังก์ชันใดบ้างที่ทำให้เข้า "ส่วน Admin" (/admin, /api/admin) ได้
 const ADMIN_AREA_FUNCTIONS = ['admin.users', 'admin.roles', 'admin.permissions', 'admin.acl'];
 
 const CODES = new Set(FUNCTIONS.map((f) => f.code));
 
-// บันทึก/อัปเดตทะเบียนฟังก์ชันลงฐานข้อมูล (ไม่แตะการเชื่อม Permission ที่ Admin ตั้งไว้)
 async function syncFunctions(db) {
   for (const f of FUNCTIONS) {
     await db.query(

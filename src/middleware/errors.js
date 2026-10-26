@@ -1,8 +1,3 @@
-// =====================================================================
-//  Middleware : จัดการข้อผิดพลาดกลาง + 404
-//  - 403 ทุกกรณี (ไม่มีสิทธิ์/ไม่ใช่เจ้าของ/ไฟล์ต้องห้าม) จะถูกบันทึก Log ที่นี่
-//  - API ตอบ JSON, หน้าเว็บแสดงหน้า Error ภาษาไทย
-// =====================================================================
 const { audit } = require('../services/auditService');
 const { notFound } = require('../utils/httpError');
 const { isApi } = require('./auth');
@@ -24,7 +19,6 @@ function notFoundHandler(req, res, next) {
   next(notFound('ไม่พบหน้าที่ต้องการ'));
 }
 
-// eslint-disable-next-line no-unused-vars
 async function errorHandler(err, req, res, next) {
   let status = err.status || err.statusCode || 500;
   if (err.type === 'entity.too.large') status = 413;

@@ -1,7 +1,3 @@
-// =====================================================================
-//  ส่วน Admin /admin/... (แยกทาง Logical: กลุ่ม Route, เมนู, หน้า และการตรวจสิทธิ์)
-//  ทุก Route ผ่าน requireAuth + adminAreaGate จาก app.js แล้ว และตรวจสิทธิ์รายฟังก์ชันซ้ำอีกชั้น
-// =====================================================================
 const express = require('express');
 const db = require('../../db');
 const aclService = require('../../services/aclService');
@@ -38,7 +34,6 @@ router.use('/roles', require('./roles'));
 router.use('/permissions', require('./permissions'));
 router.use('/acl', require('./acl'));
 
-// Access Matrix (Role × ฟังก์ชัน) คำนวณจากข้อมูล ACL จริง
 router.get('/access-matrix', authorize('admin.acl'), async (req, res) => {
   const m = await aclService.accessMatrix();
   res.render('admin/acl/matrix', { title: 'Access Matrix', m, MODULE_LABELS });

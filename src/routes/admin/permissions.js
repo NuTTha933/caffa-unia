@@ -1,4 +1,3 @@
-// /admin/permissions — เพิ่ม แก้ไข ลบ Permission และเชื่อมกับฟังก์ชันที่ระบบรองรับ
 const express = require('express');
 const permissionService = require('../../services/permissionService');
 const { authorize } = require('../../middleware/acl');

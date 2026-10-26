@@ -1,6 +1,3 @@
-// =====================================================================
-//  ผู้ใช้ : ตรวจรหัสผ่าน (bcrypt) และจัดการผู้ใช้โดย Admin
-// =====================================================================
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { audit } = require('./auditService');
@@ -8,16 +5,12 @@ const { Validator, checkPasswordPolicy } = require('../utils/validator');
 const { notFound, conflict, forbidden, validation } = require('../utils/httpError');
 
 const BCRYPT_COST = 12;
-// ใช้เปรียบเทียบเมื่อไม่พบผู้ใช้ เพื่อให้เวลาตอบสนองใกล้เคียงกัน (ลดการเดาชื่อผู้ใช้)
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password-0000', BCRYPT_COST);
 
 function hashPassword(plain) {
-  return bcrypt.hash(plain, BCRYPT_COST); // bcrypt สร้าง salt แบบสุ่มให้อัตโนมัติและเก็บไว้ใน hash
+  return bcrypt.hash(plain, BCRYPT_COST);
 }
 
-/**
- * ตรวจชื่อผู้ใช้/รหัสผ่าน — คืน { user } หรือ { reason } (ไม่บอกผู้ใช้ว่าผิดที่ส่วนไหน)
- */
 async function authenticate(username, password) {
   const row = (await db.query(
     'SELECT id, username, password_hash, is_active FROM users WHERE lower(username) = lower($1)',
@@ -31,10 +24,7 @@ async function authenticate(username, password) {
   return { user: { id: row.id, username: row.username } };
 }
 
-// ระบบต้องมี Admin ที่ใช้งานได้อย่างน้อย 1 คนเสมอ (เรียกภายใน Transaction ก่อน COMMIT)
 async function ensureAdminRemains(client) {
-  // กัน Race Condition (write skew): Admin 2 คนลดสิทธิ์กันเองพร้อมกัน แต่ละฝั่งจะยังนับเห็นอีกคนเป็น Admin
-  // ล็อกนี้ทำให้การตรวจจำนวน Admin ทำทีละ Transaction และนับหลังอีกฝั่ง COMMIT แล้วเสมอ
   await client.query("SELECT pg_advisory_xact_lock(hashtext('caffa_unia.admin_guard'))");
   const n = (await client.query(
     `SELECT COUNT(*) AS n FROM users u JOIN roles r ON r.id = u.role_id
@@ -157,7 +147,7 @@ async function update(req, id, input) {
         sql += `, password_hash=$${params.length}`;
       }
       await client.query(`${sql} WHERE id=$6`, params);
-      await ensureAdminRemains(client); // กันการเปลี่ยนที่ทำให้ไม่มี Admin เหลือ
+      await ensureAdminRemains(client);
       return { before, newRoleCode: role.code };
     });
   } catch (err) { throw mapUniqueError(err); }
@@ -168,7 +158,7 @@ async function update(req, id, input) {
   if ((before.email || null) !== data.email) changed.email = [before.email, data.email];
   if ((before.phone || null) !== data.phone) changed.phone = [before.phone, data.phone];
   if (before.is_active !== data.is_active) changed.is_active = [before.is_active, data.is_active];
-  if (data.password) changed.password_reset = true; // บันทึกแค่ว่ามีการรีเซ็ต ไม่บันทึกค่า
+  if (data.password) changed.password_reset = true;
 
   await audit(req, {
     category: 'admin', action: 'user.update', resourceType: 'user', resourceId: id,
@@ -200,7 +190,6 @@ async function remove(req, id) {
   });
 }
 
-// ผู้ใช้เปลี่ยนรหัสผ่านของตนเอง
 async function changeOwnPassword(req, input) {
   const v = new Validator(input);
   if (!input.current_password) v.error('current_password', 'กรุณากรอกรหัสผ่านปัจจุบัน');

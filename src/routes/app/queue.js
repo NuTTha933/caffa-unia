@@ -1,6 +1,3 @@
-// =====================================================================
-//  /app/queue — คิวบาร์ (บาริสต้า): รอชง → กำลังชง → พร้อมรับ
-// =====================================================================
 const express = require('express');
 const orderService = require('../../services/orderService');
 const { authorize } = require('../../middleware/acl');

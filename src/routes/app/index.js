@@ -1,11 +1,9 @@
-// ส่วนผู้ใช้ทั่วไป /app/... (ทุก Route ผ่าน requireAuth แล้วจาก app.js)
 const express = require('express');
 const db = require('../../db');
 const orderService = require('../../services/orderService');
 
 const router = express.Router();
 
-// หน้าหลัก — แสดงข้อมูลตามสิทธิ์ของแต่ละ Role
 router.get('/', async (req, res) => {
   const can = req.can;
   const data = { title: 'หน้าหลัก', today: null, review: [], queue: null, mine: [], active: null };

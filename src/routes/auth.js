@@ -1,6 +1,3 @@
-// =====================================================================
-//  Authentication : เข้าสู่ระบบ / ออกจากระบบ (Session-based)
-// =====================================================================
 const express = require('express');
 const config = require('../config');
 const userService = require('../services/userService');
@@ -39,11 +36,9 @@ router.post('/login', redirectIfLoggedIn, verifyCsrf, async (req, res) => {
     return renderLogin(res, 429, { username, next, error: 'เข้าสู่ระบบผิดหลายครั้งเกินไป กรุณารอ 10 นาทีแล้วลองใหม่' });
   }
 
-  // นับครั้งก่อนตรวจรหัสผ่าน (การตรวจและนับเกิดในจังหวะเดียวกัน) — กันการยิงคำขอพร้อมกันจำนวนมากให้ผ่านการตรวจก่อนถูกนับ
   loginLimiter.fail(req, username);
   const result = await userService.authenticate(username, password);
   if (!result.user) {
-    // บันทึกชื่อบัญชีที่พยายามเข้าสู่ระบบ แต่ไม่บันทึกรหัสผ่าน
     await audit(req, {
       category: 'auth', action: 'login_failed', result: 'failure', user: null, username,
       resourceType: result.userId ? 'user' : null, resourceId: result.userId,
@@ -56,7 +51,6 @@ router.post('/login', redirectIfLoggedIn, verifyCsrf, async (req, res) => {
   }
 
   loginLimiter.reset(req, username);
-  // ป้องกัน Session Fixation : สร้าง Session ID ใหม่ทุกครั้งที่เข้าสู่ระบบ
   await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
   req.session.userId = result.user.id;
   req.session.loginAt = new Date().toISOString();
@@ -69,7 +63,6 @@ router.post('/login', redirectIfLoggedIn, verifyCsrf, async (req, res) => {
 
 router.post('/logout', requireAuth, verifyCsrf, async (req, res) => {
   await audit(req, { category: 'auth', action: 'logout', resourceType: 'user', resourceId: req.user.id });
-  // ลบ Session ออกจากฐานข้อมูล → cookie เดิมใช้ไม่ได้อีก
   await new Promise((resolve) => req.session.destroy(() => resolve()));
   res.clearCookie(config.session.cookieName, { httpOnly: true, sameSite: 'lax', secure: config.session.secureCookie });
   res.redirect('/login?loggedOut=1');

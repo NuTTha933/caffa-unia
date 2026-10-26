@@ -1,9 +1,3 @@
-// =====================================================================
-//  สร้าง Express App — ลำดับ Middleware (สำคัญต่อความปลอดภัย)
-//  1 helmet → 2 static → 3 body parser → 4 session → 5 loadUser → 6 csrf/flash
-//  7 activityLog → 8 routes (requireAuth → adminAreaGate → verifyCsrf → authorize → handler)
-//  9 404 → 10 errorHandler
-// =====================================================================
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
@@ -43,7 +37,6 @@ function createApp({ sessionStore } = {}) {
   app.locals.shop = config.shop;
   app.locals.showDemoAccounts = config.showDemoAccounts;
 
-  // 1) Security headers (CSP อนุญาตเฉพาะไฟล์จาก Server ตัวเอง)
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -61,19 +54,15 @@ function createApp({ sessionStore } = {}) {
     hsts: config.isProd,
   }));
 
-  // 2) ไฟล์ static (ไม่รวม storage/uploads — ไฟล์อัปโหลดเปิดผ่าน Route ที่ตรวจสิทธิ์เท่านั้น)
   const vendor = { maxAge: '7d' };
-  // ฟอนต์เสิร์ฟจาก Server เอง (ใช้งานได้แม้ไม่มีอินเทอร์เน็ต): Trirong (หัวเรื่อง) + IBM Plex Sans Thai (เนื้อหา) + IBM Plex Mono (รหัส)
   app.use('/vendor/fonts/trirong', express.static(path.join(root, 'node_modules/@fontsource/trirong'), vendor));
   app.use('/vendor/fonts/plex-thai', express.static(path.join(root, 'node_modules/@fontsource/ibm-plex-sans-thai'), vendor));
   app.use('/vendor/fonts/plex-mono', express.static(path.join(root, 'node_modules/@fontsource/ibm-plex-mono'), vendor));
   app.use(express.static(path.join(root, 'public'), { maxAge: config.isProd ? '1d' : 0 }));
 
-  // 3) Body parser (จำกัดขนาด)
   app.use(express.urlencoded({ extended: true, limit: '200kb' }));
   app.use(express.json({ limit: '200kb' }));
 
-  // 4) Session เก็บใน PostgreSQL (ออกจากระบบ = ลบ Session ฝั่ง Server ทันที)
   app.use(session({
     store: sessionStore || new PgSession({
       pool: db.pool,
@@ -93,7 +82,6 @@ function createApp({ sessionStore } = {}) {
     },
   }));
 
-  // 5) โหลดผู้ใช้ + สิทธิ์ล่าสุดจากฐานข้อมูล, 6) CSRF token + Flash, 7) Log การเข้าใช้หน้า
   app.use(loadUser);
   app.use(csrfToken);
   app.use(flash);
@@ -104,7 +92,6 @@ function createApp({ sessionStore } = {}) {
   });
   app.use(activityLog);
 
-  // 8) Routes — แยกส่วนผู้ใช้ทั่วไป / ส่วน Admin / API / API Admin ทาง Logical
   app.get('/health', (req, res) => res.json({ ok: true }));
   app.use('/', authRoutes);
   app.use('/app', requireAuth, verifyCsrf, appRoutes);
@@ -112,7 +99,6 @@ function createApp({ sessionStore } = {}) {
   app.use('/api/admin', requireAuth, adminAreaGate, verifyCsrf, apiAdminRoutes);
   app.use('/api', requireAuth, verifyCsrf, apiRoutes);
 
-  // 9) 404, 10) Error handler
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

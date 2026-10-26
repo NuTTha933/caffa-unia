@@ -1,4 +1,3 @@
-// /admin/users — จัดการผู้ใช้และกำหนด Role ผ่านเว็บ
 const express = require('express');
 const userService = require('../../services/userService');
 const roleService = require('../../services/roleService');

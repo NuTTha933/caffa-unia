@@ -1,7 +1,3 @@
-// =====================================================================
-//  Permission : เพิ่ม แก้ไข ลบ และ "เชื่อมกับฟังก์ชันที่ระบบรองรับ" ผ่านหน้าเว็บ
-//  (Permission ที่ไม่ได้เชื่อมกับฟังก์ชันใดจะยังไม่เปิดสิทธิ์อะไร — ป้องกันจริงที่ Middleware)
-// =====================================================================
 const db = require('../db');
 const { audit } = require('./auditService');
 const { Validator } = require('../utils/validator');
@@ -74,7 +70,6 @@ async function create(req, input) {
       for (const fid of data.function_ids) {
         await client.query('INSERT INTO permission_functions (permission_id, function_id) VALUES ($1,$2)', [p.id, fid]);
       }
-      // Role ที่เป็น Admin ได้ Permission ใหม่อัตโนมัติ (แสดงในตาราง ACL ให้ตรงกัน)
       await client.query(
         `INSERT INTO role_permissions (role_id, permission_id, granted_by)
          SELECT id, $1, $2 FROM roles WHERE is_admin ON CONFLICT DO NOTHING`,
@@ -135,7 +130,7 @@ async function remove(req, id) {
     const roles = (await client.query(
       'SELECT r.code FROM role_permissions rp JOIN roles r ON r.id=rp.role_id WHERE rp.permission_id=$1', [id],
     )).rows.map((r) => r.code);
-    await client.query('DELETE FROM permissions WHERE id=$1', [id]); // CASCADE ลบการกำหนดให้ Role
+    await client.query('DELETE FROM permissions WHERE id=$1', [id]);
     return { p, roles };
   });
   await audit(req, {

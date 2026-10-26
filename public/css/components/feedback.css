@@ -1,10 +1,3 @@
-/* ข้อความแจ้งเตือน (flash) และป้ายสถานะ (chip/tag)
- * ส่วนหนึ่งของระบบ Kernel Coffee — สี/ฟอนต์/ระยะห่างทั้งหมดอ้างอิงตัวแปรใน tokens.css
- */
-
-/* ===================================================================
-   Notices (flash) — quiet, in-flow, no layout jump after load
-   =================================================================== */
 .notice {
   display: flex; align-items: flex-start; gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
@@ -26,9 +19,6 @@
 }
 .notice__close::before { content: ""; position: absolute; inset: -0.5rem; }
 
-/* ===================================================================
-   Status chips — text + glyph, never colour alone
-   =================================================================== */
 .chip {
   display: inline-flex; align-items: center; gap: 0.35em;
   padding: var(--space-3xs) var(--space-xs);

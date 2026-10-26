@@ -1,9 +1,3 @@
-// =====================================================================
-//  เตรียมฐานข้อมูลอัตโนมัติตอนเริ่ม Server (เปิดด้วย DB_AUTO_SETUP=true — ใช้บน Render)
-//  - ensureSchema    : ถ้ายังไม่มีตาราง จะรัน database/schema.sql + seed.sql ให้ (ไม่ลบข้อมูลที่มีอยู่แล้ว)
-//  - restoreSeedFiles: ดิสก์ของ Render ฟรีจะถูกล้างทุกครั้งที่ Server หลับ/เริ่มใหม่
-//                      จึงคัดลอกภาพเมนูและสลิปตัวอย่างกลับเข้าโฟลเดอร์อัปโหลดถ้าหายไป
-// =====================================================================
 const fs = require('fs');
 const path = require('path');
 const config = require('./config');
@@ -25,7 +19,6 @@ async function ensureSchema(db) {
   return true;
 }
 
-// ไฟล์ตัวอย่างจาก seed.sql: สลิป slip-K0001.png ... และภาพเมนู <code>.jpg
 function seedSource(file) {
   if (file.kind === 'payment_slip' && /^slip-K\d+\.png$/.test(file.original_name)) {
     return path.join(seedDir, 'slip-sample.png');

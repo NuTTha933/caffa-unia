@@ -1,7 +1,3 @@
-// =====================================================================
-//  /app/orders — กระบวนการหลัก
-//  สั่ง + แนบสลิป → ตรวจสลิป (รับ/ปฏิเสธ) → เริ่มชง → พร้อมรับ → ส่งมอบ
-// =====================================================================
 const express = require('express');
 const orderService = require('../../services/orderService');
 const menuService = require('../../services/menuService');
@@ -68,7 +64,6 @@ router.get('/:id', authorize(...VIEW), async (req, res) => {
 });
 
 const back = (req) => `/app/orders/${req.params.id}`;
-// ปุ่มบนบอร์ดคิวบาร์ส่ง back=queue มา เพื่อกลับไปหน้าคิว
 const backFromBar = (req) => (req.body && req.body.back === 'queue' ? '/app/queue' : back(req));
 
 router.post('/:id/accept', authorize('order.review'), withFlashBack(async (req, res) => {
@@ -110,7 +105,6 @@ router.post('/:id/delete', authorize('order.delete'), withFlashBack(async (req, 
   res.redirect('/app/orders');
 }, back));
 
-// แนบสลิป (ตรวจสิทธิ์ → รับไฟล์ จำกัดขนาด → ตรวจชนิดจากเนื้อไฟล์ → บันทึก)
 router.post(
   '/:id/slip',
   authorize('slip.upload'),

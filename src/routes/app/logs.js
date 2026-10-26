@@ -1,8 +1,3 @@
-// =====================================================================
-//  /app/logs — ดู Log ย้อนหลัง ค้นหา/กรองตามช่วงเวลา ผู้ใช้ ประเภทเหตุการณ์
-//  log.view     → เห็นเฉพาะหมวดงาน (ออเดอร์/เมนู/ไฟล์)   "ดูตามกำหนด"
-//  log.view_all → เห็นทุกหมวด + ส่งออก CSV
-// =====================================================================
 const express = require('express');
 const auditService = require('../../services/auditService');
 const userService = require('../../services/userService');
@@ -53,7 +48,7 @@ router.get('/', authorize('log.view', 'log.view_all'), async (req, res) => {
 function csvCell(v) {
   if (v === null || v === undefined) return '';
   let s = typeof v === 'object' ? JSON.stringify(v) : String(v);
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; // กัน CSV/Formula injection เมื่อเปิดใน Excel
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return `"${s.replace(/"/g, '""')}"`;
 }
 
@@ -71,7 +66,7 @@ router.get('/export.csv', authorize('log.view_all'), async (req, res) => {
   await auditService.audit(req, { category: 'admin', action: 'log.export', details: { rows: rows.length, filters } });
   res.set('Content-Type', 'text/csv; charset=utf-8');
   res.set('Content-Disposition', `attachment; filename="audit-logs-${fmt.todayISO()}.csv"`);
-  res.send(`﻿${lines.join('\r\n')}`); // BOM ให้ Excel อ่านภาษาไทยได้
+  res.send(`﻿${lines.join('\r\n')}`);
 });
 
 module.exports = router;

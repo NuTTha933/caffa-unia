@@ -1,9 +1,3 @@
-/* หน้าเข้าสู่ระบบและหน้าแจ้งข้อผิดพลาด
- */
-
-/* ===================================================================
-   Login
-   =================================================================== */
 .door { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); }
 .door__intro { padding: var(--space-xl) var(--gutter) var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-ink); }
 .door__intro .wordmark { font-size: clamp(2rem, 4vw + 1rem, 3.5rem); }
@@ -26,6 +20,5 @@
   .door__form { align-self: center; padding: var(--space-3xl) var(--space-2xl); }
 }
 
-/* Error page */
 .error-page { padding: var(--space-xl) 0; max-width: 40rem; }
 .error-page .code { font-family: var(--font-mono); color: var(--color-accent); margin: 0 0 var(--space-xs); }

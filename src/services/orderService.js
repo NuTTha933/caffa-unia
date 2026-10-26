@@ -1,8 +1,3 @@
-// =====================================================================
-//  ออเดอร์ (กระบวนการหลัก)
-//  ลูกค้าสั่ง + แนบสลิป → ผู้จัดการตรวจสลิป (รับออเดอร์/ปฏิเสธ) → บาริสต้าชง → พร้อมรับ → ส่งมอบ
-//  (+ ลูกค้ายกเลิกได้ก่อนร้านตรวจสลิป)
-// =====================================================================
 const db = require('../db');
 const { audit } = require('./auditService');
 const { can } = require('./aclService');
@@ -13,13 +8,10 @@ const { orderNo } = require('../utils/format');
 
 const STATUSES = ['pending', 'accepted', 'brewing', 'ready', 'completed', 'rejected', 'cancelled'];
 const QUEUE_STATUSES = ['accepted', 'brewing', 'ready', 'completed'];
-const PAID_STATUSES = QUEUE_STATUSES; // ออเดอร์ที่ร้านรับเงินแล้ว (นับเป็นยอดขาย)
+const PAID_STATUSES = QUEUE_STATUSES;
 const MAX_QTY_PER_LINE = 20;
 const MAX_CUPS_PER_ORDER = 30;
 
-// ---------------------------------------------------------------------
-//  ขอบเขตข้อมูลตามสิทธิ์ (เงื่อนไขเจ้าของข้อมูล)
-// ---------------------------------------------------------------------
 function scopeSql(user, params) {
   if (can(user, 'order.view_all')) return 'TRUE';
   const conds = [];
@@ -50,7 +42,6 @@ function canDeleteSlip(user, file, o) {
   return can(user, 'slip.delete') && file.uploaded_by === user.id;
 }
 
-// ปุ่ม/การกระทำที่ผู้ใช้ทำได้กับออเดอร์นี้ (ใช้แสดงผล — ฝั่ง Server ตรวจซ้ำทุกครั้ง)
 function allowedActions(user, o) {
   const reviewer = o.status === 'pending' && can(user, 'order.review') && !isOwner(user, o);
   return {
@@ -121,7 +112,6 @@ async function findRaw(id, client = db) {
   return o;
 }
 
-// ดึงออเดอร์พร้อมตรวจสิทธิ์การมองเห็น (ไม่ใช่เจ้าของ/ไม่มีสิทธิ์ → 403 และบันทึก Log)
 async function getForUser(user, id) {
   const o = await findRaw(id);
   if (!canView(user, o)) {
@@ -163,7 +153,6 @@ async function detail(user, id) {
   return o;
 }
 
-// คิวบาร์ (บาริสต้า): รอชง / กำลังชง / พร้อมรับ + ส่งมอบล่าสุดวันนี้
 async function queue(user) {
   const rows = (await db.query(
     `${SELECT} WHERE o.status IN ('accepted','brewing','ready') ORDER BY o.reviewed_at NULLS LAST, o.created_at`,
@@ -185,11 +174,6 @@ async function queue(user) {
   };
 }
 
-// ---------------------------------------------------------------------
-//  1) สั่งเครื่องดื่ม — ราคาคำนวณจากฐานข้อมูลเสมอ (ไม่เชื่อราคาจาก Browser)
-// ---------------------------------------------------------------------
-// รับได้ทั้งฟอร์ม (qty[m<menuId>]) และ JSON ({ items: [{ menu_item_id, quantity }] })
-// หมายเหตุ: ใช้คีย์ขึ้นต้นด้วย m เพราะ body parser จะตีความคีย์ที่เป็นตัวเลขล้วนเป็นอาร์เรย์
 function readLines(input) {
   if (Array.isArray(input.items)) {
     return input.items.map((it) => ({ menuId: it && it.menu_item_id, qty: it && it.quantity }));
@@ -201,7 +185,6 @@ function readLines(input) {
 }
 
 async function create(req, input = {}) {
-  // 1) ตรวจข้อมูลที่ส่งมา
   const v = new Validator(input);
   v.string('note', 'หมายเหตุ', { required: false, max: 200 });
   const errors = {};
@@ -217,9 +200,7 @@ async function create(req, input = {}) {
   if (lines.reduce((s, l) => s + l.qty, 0) > MAX_CUPS_PER_ORDER) errors.items = `สั่งได้ไม่เกิน ${MAX_CUPS_PER_ORDER} รายการต่อออเดอร์`;
   if (!v.ok || Object.keys(errors).length) throw validation({ ...v.errors, ...errors });
 
-  // 2) บันทึกออเดอร์ในฐานข้อมูล — ราคาอ่านจากตารางเมนูเสมอ (ไม่เชื่อราคาจาก Browser)
   const row = await db.withTransaction(async (client) => {
-    // FOR SHARE: ระหว่างสร้างออเดอร์ ห้ามใครเปลี่ยนสถานะเปิด/ปิดขายหรือราคาของเมนูที่สั่ง (กัน race กับการกดปิดขาย)
     const menu = (await client.query('SELECT * FROM menu_items WHERE id = ANY($1) FOR SHARE', [lines.map((l) => l.menuId)])).rows;
     const byId = new Map(menu.map((m) => [m.id, m]));
     for (const l of lines) {
@@ -246,7 +227,6 @@ async function create(req, input = {}) {
     return { ...o, lines: lines.map((l) => ({ code: byId.get(l.menuId).code, qty: l.qty })) };
   });
 
-  // 3) บันทึก Log
   await audit(req, {
     category: 'order', action: 'order.create', resourceType: 'order', resourceId: row.id,
     details: { order_no: orderNo(row.id), total: Number(row.total_amount), items: row.lines },
@@ -254,9 +234,6 @@ async function create(req, input = {}) {
   return row;
 }
 
-// ---------------------------------------------------------------------
-//  ตัวช่วยเปลี่ยนสถานะใน Transaction (ล็อกแถวกันการกดซ้ำพร้อมกัน)
-// ---------------------------------------------------------------------
 async function transition(req, id, { from, to, action, note, apply }) {
   const result = await db.withTransaction(async (client) => {
     const o = (await client.query('SELECT * FROM orders WHERE id=$1 FOR UPDATE', [id])).rows[0];
@@ -284,9 +261,6 @@ function noSelfReview(req, o, id) {
   }
 }
 
-// ---------------------------------------------------------------------
-//  2) ตรวจสลิป : รับออเดอร์ / ปฏิเสธ
-// ---------------------------------------------------------------------
 async function accept(req, id, input = {}) {
   const note = String(input.note || '').trim().slice(0, 300) || 'ตรวจสลิปแล้ว ยอดตรง';
   return transition(req, id, {
@@ -321,9 +295,6 @@ async function reject(req, id, input = {}) {
   });
 }
 
-// ---------------------------------------------------------------------
-//  3) บาร์ : เริ่มชง → ชงเสร็จ → ส่งมอบ
-// ---------------------------------------------------------------------
 async function brew(req, id) {
   return transition(req, id, {
     from: ['accepted'], to: 'brewing', action: 'order.brew', note: 'เริ่มชง',
@@ -355,9 +326,6 @@ async function complete(req, id) {
   });
 }
 
-// ---------------------------------------------------------------------
-//  ยกเลิก (เฉพาะเจ้าของ ก่อนร้านตรวจสลิป) / ลบ
-// ---------------------------------------------------------------------
 async function cancel(req, id) {
   return transition(req, id, {
     from: ['pending'], to: 'cancelled', action: 'order.cancel', note: 'ลูกค้ายกเลิกออเดอร์',
@@ -388,9 +356,6 @@ async function remove(req, id) {
   });
 }
 
-// ---------------------------------------------------------------------
-//  สลิปโอนเงิน
-// ---------------------------------------------------------------------
 function slipUploadDenied(o, id) {
   return forbidden(
     o.status === 'pending' ? 'แนบสลิปได้เฉพาะออเดอร์ของตนเอง' : 'ออเดอร์นี้ผ่านขั้นตรวจสลิปแล้ว แนบสลิปเพิ่มไม่ได้',
@@ -402,8 +367,6 @@ async function uploadSlip(req, id, file) {
   const o = await getForUser(req.user, id);
   if (!canUploadSlip(req.user, o)) throw slipUploadDenied(o, id);
 
-  // กัน Race Condition: ล็อกแถวออเดอร์ (FOR UPDATE) แล้วตรวจสถานะซ้ำใน Transaction เดียวกับการบันทึกสลิป
-  // การกดรับ/ปฏิเสธออเดอร์ และการแนบหรือลบสลิปของออเดอร์เดียวกันจึงต้องรอคิวกัน ไม่ทำพร้อมกัน
   let savedName = null;
   let result;
   try {
@@ -420,11 +383,11 @@ async function uploadSlip(req, id, file) {
       return { saved, old };
     });
   } catch (err) {
-    if (savedName) await fileService.removeStored(savedName); // Transaction ไม่สำเร็จ → ลบไฟล์ที่เพิ่งเขียน
+    if (savedName) await fileService.removeStored(savedName);
     throw err;
   }
   const { saved, old } = result;
-  for (const f of old) await fileService.removeStored(f.stored_name); // ลบไฟล์สลิปเก่าหลัง COMMIT
+  for (const f of old) await fileService.removeStored(f.stored_name);
   await audit(req, {
     category: 'file', action: 'file.upload', resourceType: 'order', resourceId: id,
     details: {
@@ -436,7 +399,6 @@ async function uploadSlip(req, id, file) {
   return saved;
 }
 
-// ตรวจสิทธิ์เปิดไฟล์ (ทั้งภาพเมนูและสลิป)
 async function assertCanViewFile(user, file) {
   if (file.kind === 'menu_image') {
     if (can(user, 'menu.view')) return;
@@ -453,7 +415,6 @@ async function deleteSlip(req, fileId) {
   const found = await fileService.getFile(fileId);
   if (found.kind !== 'payment_slip') throw notFound('ไม่พบสลิป');
 
-  // กัน Race Condition: ล็อกออเดอร์ก่อนลบ — ลบสลิปพร้อมกับที่ผู้จัดการกดรับออเดอร์ไม่ได้
   const { file, o } = await db.withTransaction(async (client) => {
     const locked = (await client.query('SELECT * FROM orders WHERE id=$1 FOR UPDATE', [found.order_id])).rows[0];
     const current = (await client.query(`SELECT * FROM files WHERE id=$1 AND kind='payment_slip'`, [found.id])).rows[0];

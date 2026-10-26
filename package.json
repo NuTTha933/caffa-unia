@@ -1,7 +1,7 @@
 {
-  "name": "kernel-coffee",
+  "name": "caffa_unia",
   "version": "1.0.0",
-  "description": "ระบบจัดการร้านกาแฟ Kernel Coffee (Node.js + Express + PostgreSQL) พร้อม Authentication, ACL, Log และอัปโหลดสลิป",
+  "description": "ระบบจัดการร้านกาแฟ Caffa_Unia (Node.js + Express + PostgreSQL) พร้อม Authentication, ACL, Log และอัปโหลดสลิป",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

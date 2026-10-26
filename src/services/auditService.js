@@ -1,13 +1,8 @@
-// =====================================================================
-//  บันทึกและค้นหา Log การใช้งาน (เก็บถาวรในตาราง audit_logs)
-//  กฎสำคัญ: ไม่บันทึกรหัสผ่าน, Session ID, Token, CSRF token หรือ cookie
-// =====================================================================
 const db = require('../db');
 const { LOG_CATEGORIES } = require('../utils/format');
 
 const SENSITIVE_KEY = /pass(word)?|pwd|token|secret|session|sid|cookie|csrf|authorization|hash/i;
 
-// ตัดข้อมูลลับออกจาก details ก่อนบันทึก (ทำแบบ recursive)
 function sanitize(value, depth = 0) {
   if (value === null || value === undefined) return value;
   if (depth > 4) return '[…]';
@@ -30,11 +25,6 @@ function clip(s, n) {
   return str.length > n ? str.slice(0, n) : str;
 }
 
-/**
- * บันทึก Log หนึ่งรายการ — ไม่โยน Error ออกไป (Log ล้มเหลวต้องไม่ทำให้งานหลักพัง)
- * @param {object|null} req  Express request (ใช้หา user, ip, method, path)
- * @param {object} e  { category, action, result, resourceType, resourceId, details, username }
- */
 async function audit(req, e) {
   try {
     const user = e.user !== undefined ? e.user : req && req.user;
@@ -65,7 +55,6 @@ async function audit(req, e) {
   }
 }
 
-// หมวดที่ผู้มีสิทธิ์ log.view (ไม่ใช่ view_all) ดูได้ — "ดูตามกำหนด"
 const BUSINESS_CATEGORIES = ['order', 'menu', 'file'];
 
 function buildFilter(filters, allowedCategories) {

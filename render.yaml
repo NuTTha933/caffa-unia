@@ -1,5 +1,3 @@
-# Render Blueprint — สร้างเว็บ + ฐานข้อมูล PostgreSQL ฟรีให้อัตโนมัติ
-# วิธีใช้: เปิด https://render.com/deploy?repo=https://github.com/NuTTha933/caffa-unia แล้วกด Apply
 services:
   - type: web
     name: caffa-unia

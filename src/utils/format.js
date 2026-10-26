@@ -1,4 +1,3 @@
-// ฟังก์ชันจัดรูปแบบข้อมูลสำหรับแสดงผล (ใช้ใน EJS ผ่าน app.locals)
 const TZ = 'Asia/Bangkok';
 
 const dateTimeFmt = new Intl.DateTimeFormat('th-TH', {
@@ -22,7 +21,6 @@ function date(v) {
   return dateFmt.format(d);
 }
 
-// วันที่ปัจจุบันตามเวลาไทย รูปแบบ YYYY-MM-DD
 function todayISO() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
 }
@@ -37,7 +35,6 @@ function daysBetween(fromIso, toIso) {
   return Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86400000);
 }
 
-// สถานะออเดอร์ — glyph ใช้คู่กับข้อความเสมอ (ไม่สื่อความหมายด้วยสีอย่างเดียว)
 const ORDER_STATUS = {
   pending:   { label: 'รอตรวจสลิป', short: 'รอตรวจ', tone: 'warn' },
   accepted:  { label: 'รอชง',        short: 'รอชง',   tone: 'info' },
@@ -48,7 +45,6 @@ const ORDER_STATUS = {
   cancelled: { label: 'ยกเลิก',      short: 'ยกเลิก', tone: 'done' },
 };
 
-// ลำดับขั้นของออเดอร์ (ใช้วาดแถบความคืบหน้า)
 const ORDER_STEPS = [
   { key: 'pending', label: 'สั่งและแนบสลิป' },
   { key: 'accepted', label: 'ร้านตรวจสลิป' },
@@ -82,7 +78,6 @@ const MODULE_LABELS = {
   admin: 'ส่วนผู้ดูแลระบบ',
 };
 
-// ป้ายกลุ่ม Permission (ส่วนหน้าจุดของรหัส) ในหน้า ACL
 const PERMISSION_GROUPS = {
   menu: 'เมนู', order: 'ออเดอร์', slip: 'สลิปโอนเงิน', report: 'รายงาน', log: 'Log',
   user: 'ผู้ใช้', role: 'บทบาท', permission: 'Permission', acl: 'ACL',
@@ -92,13 +87,11 @@ function orderNo(id) {
   return `K-${String(id).padStart(4, '0')}`;
 }
 
-// จำนวนเงินบาท เช่น 1,250 หรือ 72.50
 function baht(n) {
   const v = Number(n || 0);
   return v.toLocaleString('th-TH', { minimumFractionDigits: Number.isInteger(v) ? 0 : 2, maximumFractionDigits: 2 });
 }
 
-// เวลาแบบสั้น (ชั่วโมง:นาที) และ "ผ่านมาแล้วกี่นาที"
 const timeFmt = new Intl.DateTimeFormat('th-TH', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
 function time(v) {
   return v ? timeFmt.format(new Date(v)) : '-';
@@ -132,7 +125,6 @@ function initials(name) {
   return parts.slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 }
 
-// สร้าง query string โดยแทนค่าบางตัว (ใช้กับ pagination/filter)
 function qs(current, changes = {}) {
   const params = new URLSearchParams();
   const merged = { ...current, ...changes };

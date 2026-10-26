@@ -1,9 +1,3 @@
-/* หน้าคิวบาร์ (บาริสต้า): คอลัมน์ รอชง · กำลังชง · พร้อมรับ
- */
-
-/* ===================================================================
-   Bar rail — order tickets (barista queue)
-   =================================================================== */
 .bar { display: grid; gap: var(--space-xl); grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 52rem) { .bar { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); } }
 .bar__col h2 {

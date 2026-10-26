@@ -1,12 +1,7 @@
-// =====================================================================
-//  Middleware : บันทึกการเข้าใช้งานหน้าเว็บ/API ของผู้ใช้ (ดูย้อนหลังได้ว่าใครเข้าส่วนไหน เมื่อไร)
-//  - การเปลี่ยนแปลงข้อมูล (เพิ่ม/แก้ไข/ลบ/อนุมัติ) บันทึกละเอียดใน Service แต่ละตัว
-//  - การเข้าถึงที่ถูกปฏิเสธ บันทึกใน errorHandler
-// =====================================================================
 const { audit } = require('../services/auditService');
 
 const TRACKED = /^\/(app|admin|api)(\/|$)/;
-const SKIP = /^\/(app|api)\/files\//; // การเปิดไฟล์บันทึกแยกเป็น file.view / file.download
+const SKIP = /^\/(app|api)\/files\//;
 
 function activityLog(req, res, next) {
   if (req.method !== 'GET') return next();

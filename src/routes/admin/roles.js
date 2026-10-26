@@ -1,4 +1,3 @@
-// /admin/roles — เพิ่ม แก้ไข ลบ Role ผ่านเว็บ (ไม่ต้องแก้ Source Code)
 const express = require('express');
 const roleService = require('../../services/roleService');
 const { authorize } = require('../../middleware/acl');

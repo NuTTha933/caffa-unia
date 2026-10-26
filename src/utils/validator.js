@@ -1,4 +1,3 @@
-// ตัวช่วยตรวจสอบข้อมูลฝั่ง Server (ไม่เชื่อการตรวจใน Browser)
 const { validation } = require('./httpError');
 
 class Validator {
@@ -53,7 +52,6 @@ class Validator {
     return this;
   }
 
-  // จำนวนเงิน (ทศนิยมไม่เกิน 2 ตำแหน่ง)
   money(field, label, { required = true, min = 0, max = 999999 } = {}) {
     const raw = this.raw(field);
     const s = raw === undefined || raw === null ? '' : String(raw).trim().replace(/,/g, '');
@@ -106,7 +104,6 @@ class Validator {
     return this;
   }
 
-  // รับค่าเป็นอาร์เรย์ของจำนวนเต็ม (เช่น checkbox หลายตัว)
   intList(field) {
     let v = this.input[field];
     if (v === undefined || v === null || v === '') v = [];
@@ -124,14 +121,12 @@ class Validator {
     return Object.keys(this.errors).length === 0;
   }
 
-  // ถ้ามีข้อผิดพลาดให้โยน Error 422 พร้อมรายการ field ที่ผิด
   done() {
     if (!this.ok) throw validation(this.errors);
     return this.data;
   }
 }
 
-// นโยบายรหัสผ่าน: อย่างน้อย 8 ตัว มีตัวอักษรและตัวเลข
 function checkPasswordPolicy(v, field, password, label = 'รหัสผ่าน') {
   if (!password) return v.error(field, `กรุณากรอก${label}`);
   if (password.length < 8 || password.length > 72) return v.error(field, `${label}ต้องยาว 8–72 ตัวอักษร`);

@@ -1,6 +1,3 @@
-// =====================================================================
-//  API ส่วน Admin /api/admin/... (ผ่าน requireAuth + adminAreaGate จาก app.js)
-// =====================================================================
 const express = require('express');
 const userService = require('../../services/userService');
 const roleService = require('../../services/roleService');
@@ -15,9 +12,8 @@ const userJson = (u) => ({
   id: u.id, username: u.username, full_name: u.full_name, email: u.email, phone: u.phone,
   role: { id: u.role_id, code: u.role_code, name: u.role_name }, is_active: u.is_active,
   last_login_at: u.last_login_at, created_at: u.created_at,
-}); // ไม่มี password_hash ออกไปทาง API
+});
 
-// ---------------- ผู้ใช้ ----------------
 router.get('/users', authorize('admin.users'), async (req, res) => {
   res.json({ data: (await userService.list({ q: req.query.q })).map(userJson) });
 });
@@ -28,7 +24,6 @@ router.post('/users', authorize('admin.users'), async (req, res) => {
 router.put('/users/:id', authorize('admin.users'), async (req, res) => {
   const id = idParam(req);
   const current = await userService.get(id);
-  // รองรับส่งเฉพาะบาง field (เช่น { "role_id": 5 })
   const body = { full_name: current.full_name, email: current.email, phone: current.phone,
     role_id: current.role_id, is_active: current.is_active, ...(req.body || {}) };
   await userService.update(req, id, body);
@@ -39,7 +34,6 @@ router.delete('/users/:id', authorize('admin.users'), async (req, res) => {
   res.json({ ok: true });
 });
 
-// ---------------- Role ----------------
 router.get('/roles', authorize('admin.roles'), async (req, res) => {
   res.json({ data: await roleService.list() });
 });
@@ -56,7 +50,6 @@ router.delete('/roles/:id', authorize('admin.roles'), async (req, res) => {
   res.json({ ok: true });
 });
 
-// ---------------- Permission ----------------
 router.get('/permissions', authorize('admin.permissions'), async (req, res) => {
   res.json({ data: await permissionService.list() });
 });
@@ -76,7 +69,6 @@ router.delete('/permissions/:id', authorize('admin.permissions'), async (req, re
   res.json({ ok: true });
 });
 
-// ---------------- ACL ----------------
 router.get('/acl', authorize('admin.acl'), async (req, res) => {
   const m = await aclService.getMatrix();
   res.json({
@@ -85,7 +77,6 @@ router.get('/acl', authorize('admin.acl'), async (req, res) => {
     grants: [...m.granted].map((k) => { const [role_id, permission_id] = k.split(':').map(Number); return { role_id, permission_id }; }),
   });
 });
-// body: { "role_id": 2, "permission_id": 21, "granted": true|false }
 router.put('/acl', authorize('admin.acl'), async (req, res) => {
   const b = req.body || {};
   const roleId = Number(b.role_id);

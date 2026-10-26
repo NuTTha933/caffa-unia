@@ -1,12 +1,10 @@
-
 :root {
   color-scheme: light;
 
-  /* ── Paper & ink ── */
   --color-paper:    oklch(96%   0.016 78);
   --color-paper-2:  oklch(93.5% 0.020 75);
   --color-paper-3:  oklch(90%   0.025 72);
-  --color-field:    oklch(98.5% 0.008 80);   /* พื้นช่องกรอกข้อมูล */
+  --color-field:    oklch(98.5% 0.008 80);
   --color-rule:     oklch(84%   0.022 68);
   --color-rule-2:   oklch(64%   0.024 60);
   --color-muted:    oklch(48%   0.022 55);
@@ -14,13 +12,11 @@
   --color-ink-2:    oklch(29%   0.026 45);
   --color-ink:      oklch(21%   0.028 42);
 
-  /* ── Accent: ใช้น้อยกว่า 5% ของหน้าจอ (เมนูที่เลือก, focus, ราคารวม, ตัวบ่งชี้เล็ก ๆ) ── */
   --color-accent:      oklch(52%  0.150 40);
-  --color-accent-ink:  oklch(97%  0.012 78);   /* ข้อความบนพื้น accent */
+  --color-accent-ink:  oklch(97%  0.012 78);
   --color-accent-wash: oklch(92.5% 0.035 52);
   --color-focus:       oklch(50%  0.170 38);
 
-  /* ── สถานะ (มาคู่กับข้อความและรูปทรงเสมอ) ── */
   --color-ok:          oklch(43%  0.100 150);
   --color-ok-wash:     oklch(93%  0.035 150);
   --color-warn:        oklch(46%  0.095 72);
@@ -28,12 +24,10 @@
   --color-danger:      oklch(48%  0.160 27);
   --color-danger-wash: oklch(94%  0.030 27);
 
-  /* ── (แถบส่วนผู้ดูแลระบบ) ── */
   --color-dark:     oklch(21%  0.028 42);
   --color-on-dark:  oklch(95%  0.015 78);
   --color-on-dark-muted: oklch(78% 0.020 70);
 
-  /* ── Type (2+1: หัวเรื่อง serif ไทย · เนื้อหา sans ไทย · mono เฉพาะรหัส/เลขออเดอร์) ── */
   --font-display: "Trirong", "Noto Serif Thai", ui-serif, Georgia, serif;
   --font-body:    "IBM Plex Sans Thai", "Noto Sans Thai", "Leelawadee UI", ui-sans-serif, system-ui, sans-serif;
   --font-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -42,7 +36,6 @@
   --weight-strong: 600;
   --weight-display: 700;
 
-  /* สเกล 1.25 (major third) */
   --text-xs:   0.8125rem;
   --text-sm:   0.875rem;
   --text-base: 1rem;
@@ -60,7 +53,6 @@
   --tracking-display: -0.004em;
   --tracking-label: 0.02em;
 
-  /* ── Space (4pt) ── */
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
   --space-xs:  0.5rem;
@@ -75,15 +67,14 @@
   --rail-width:  15.5rem;
   --gutter:      clamp(1rem, 3.5vw, 2.5rem);
   --measure:     62ch;
-  --control-h:   2.75rem;   /* ปุ่มและช่องกรอกสูงเท่ากัน 44px */
+  --control-h:   2.75rem;
   --control-h-sm: 2.25rem;
 
   --rule-hair: 1px;
   --rule-strong: 2px;
   --radius: 0;           
-  --radius-mark: 4px;       /* ปลายแท่งกราฟ */
+  --radius-mark: 4px;
 
-  /* ── Motion ── */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in:     cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
@@ -91,7 +82,6 @@
   --dur-short: 220ms;
   --dur-long:  420ms;
 
-  /* ── Layers ── */
   --z-base: 1;
   --z-raised: 10;
   --z-sticky: 200;

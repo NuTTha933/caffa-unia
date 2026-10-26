@@ -1,6 +1,3 @@
-// =====================================================================
-//  เมนู : CRUD + เปิด/ปิดการขาย + ภาพเมนู
-// =====================================================================
 const db = require('../db');
 const { audit } = require('./auditService');
 const fileService = require('./fileService');
@@ -32,7 +29,6 @@ async function list({ q, categoryId, availableOnly = false } = {}) {
   )).rows;
 }
 
-// จัดกลุ่มตามหมวด (ใช้แสดงเป็นเมนูบอร์ด)
 function groupByCategory(items) {
   const groups = [];
   for (const it of items) {
@@ -117,7 +113,6 @@ async function update(req, id, input) {
   return result.after;
 }
 
-// เปิด/ปิดการขาย (ของหมด) — บาริสต้าทำได้โดยไม่ต้องมีสิทธิ์แก้ไขเมนู
 async function setAvailability(req, id, available) {
   const before = await get(id);
   const row = (await db.query(
@@ -149,7 +144,6 @@ async function remove(req, id) {
   });
 }
 
-// อัปโหลด/เปลี่ยนภาพเมนู (เก็บภาพล่าสุดภาพเดียว)
 async function setImage(req, id, file) {
   const item = await get(id);
   const oldFiles = (await db.query(
@@ -186,7 +180,6 @@ async function removeImage(req, id) {
   return files.length;
 }
 
-// สถิติเมนู (แสดงในหน้ารายละเอียดเมนู — ไม่มีข้อมูลส่วนตัวลูกค้า)
 async function stats(id) {
   return (await db.query(
     `SELECT COALESCE(SUM(i.quantity),0)::int AS cups, COUNT(DISTINCT i.order_id)::int AS orders

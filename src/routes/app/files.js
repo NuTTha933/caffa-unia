@@ -1,7 +1,3 @@
-// =====================================================================
-//  /app/files — เปิดดู/ดาวน์โหลด/ลบไฟล์ (ตรวจสิทธิ์ทุกครั้ง ไม่มี URL สาธารณะ)
-//  ภาพเมนู: ต้องมีสิทธิ์ menu.view · สลิป: ต้องมีสิทธิ์ slip.view และมองเห็นออเดอร์นั้นได้
-// =====================================================================
 const express = require('express');
 const fileService = require('../../services/fileService');
 const orderService = require('../../services/orderService');
@@ -15,7 +11,6 @@ async function sendFile(req, res, { download }) {
   const file = await fileService.getFile(req.params.id);
   await orderService.assertCanViewFile(req.user, file);
 
-  // บันทึก Log การเปิดสลิป (ไฟล์จำกัดสิทธิ์) และการดาวน์โหลดทุกครั้ง
   if (download || file.kind === 'payment_slip') {
     await audit(req, {
       category: 'file', action: download ? 'file.download' : 'file.view',
@@ -26,7 +21,7 @@ async function sendFile(req, res, { download }) {
   }
 
   const fullPath = fileService.storedPath(file.stored_name);
-  res.removeHeader('Content-Security-Policy'); // ให้ Browser แสดง PDF/ภาพได้ (ชนิดไฟล์ผ่านการตรวจแล้ว)
+  res.removeHeader('Content-Security-Policy');
   res.set('Cache-Control', 'private, no-store');
   res.set('X-Content-Type-Options', 'nosniff');
   if (download) {

@@ -1,14 +1,7 @@
-// =====================================================================
-//  ACL : โหลดสิทธิ์ของผู้ใช้จากฐานข้อมูล และจัดการตาราง Role × Permission
-//  ทุก Request จะอ่านสิทธิ์ใหม่จากฐานข้อมูล → เปลี่ยนสิทธิ์แล้วมีผลทันที ไม่ต้องเริ่ม Server ใหม่
-// =====================================================================
 const db = require('../db');
 const { audit } = require('./auditService');
 const { notFound, badRequest } = require('../utils/httpError');
 
-/**
- * โหลดข้อมูลผู้ใช้ + Role + ชุดฟังก์ชันที่ใช้ได้ (ผ่าน Role → Permission → Function)
- */
 async function loadAccess(userId) {
   const u = (await db.query(
     `SELECT u.id, u.username, u.full_name, u.email, u.phone, u.is_active, u.role_id,
@@ -22,7 +15,6 @@ async function loadAccess(userId) {
   let fnRows;
   let permRows;
   if (u.is_admin) {
-    // Admin ได้ทุกฟังก์ชัน รวมถึงฟังก์ชันที่เพิ่มภายหลัง
     fnRows = (await db.query('SELECT code FROM app_functions')).rows;
     permRows = (await db.query('SELECT code FROM permissions')).rows;
   } else {
@@ -63,9 +55,6 @@ function can(user, functionCode) {
   return user.functions.has(functionCode);
 }
 
-// ---------------------------------------------------------------------
-//  ตาราง ACL (Role × Permission) สำหรับหน้า /admin/acl
-// ---------------------------------------------------------------------
 async function getMatrix() {
   const roles = (await db.query(
     `SELECT r.*, (SELECT COUNT(*) FROM users u WHERE u.role_id = r.id) AS user_count
@@ -85,10 +74,6 @@ async function getMatrix() {
   return { roles, permissions, granted };
 }
 
-/**
- * บันทึกตาราง ACL ทั้งหน้า: รับรายการ "roleId:permissionId" ที่ถูกติ๊ก แล้วเทียบกับของเดิม
- * Role ที่เป็น Admin ถูกล็อกไว้ (ได้ทุกสิทธิ์เสมอ)
- */
 async function saveMatrix(req, checkedPairs) {
   const wanted = new Set(
     (checkedPairs || []).filter((s) => /^\d+:\d+$/.test(s)),
@@ -105,7 +90,7 @@ async function saveMatrix(req, checkedPairs) {
 
     const result = { granted: [], revoked: [] };
     for (const role of roles) {
-      if (role.is_admin) continue; // ล็อก Admin
+      if (role.is_admin) continue;
       for (const perm of perms) {
         const key = `${role.id}:${perm.id}`;
         const has = current.has(key);
@@ -122,7 +107,6 @@ async function saveMatrix(req, checkedPairs) {
         }
       }
     }
-    // กันค่าแปลกปลอม (role/permission ที่ไม่มีจริง)
     for (const key of wanted) {
       const [rid, pid] = key.split(':').map(Number);
       if (!roleById.has(rid) || !permById.has(pid)) throw badRequest('ข้อมูล ACL ไม่ถูกต้อง');
@@ -145,7 +129,6 @@ async function saveMatrix(req, checkedPairs) {
   return changes;
 }
 
-// กำหนด/ยกเลิก Permission ทีละคู่ (ใช้กับ API)
 async function setGrant(req, roleId, permissionId, grant) {
   const role = (await db.query('SELECT id, code, is_admin FROM roles WHERE id=$1', [roleId])).rows[0];
   const perm = (await db.query('SELECT id, code FROM permissions WHERE id=$1', [permissionId])).rows[0];
@@ -173,9 +156,6 @@ async function setGrant(req, roleId, permissionId, grant) {
   return { role: role.code, permission: perm.code, granted: grant, changed };
 }
 
-// ---------------------------------------------------------------------
-//  Access Matrix (Role × ฟังก์ชัน) คำนวณจากข้อมูลจริงในฐานข้อมูล
-// ---------------------------------------------------------------------
 async function accessMatrix() {
   const roles = (await db.query('SELECT id, code, name, is_admin FROM roles ORDER BY is_admin DESC, id')).rows;
   const functions = (await db.query('SELECT * FROM app_functions ORDER BY sort_order, code')).rows;
@@ -190,7 +170,7 @@ async function accessMatrix() {
       ORDER BY p.code`,
   )).rows;
 
-  const cell = new Map(); // "roleId:functionId" -> [permission codes]
+  const cell = new Map();
   for (const l of links) {
     const key = `${l.role_id}:${l.function_id}`;
     if (!cell.has(key)) cell.set(key, []);

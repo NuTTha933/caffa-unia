@@ -1,8 +1,3 @@
-// =====================================================================
-//  Middleware : Authentication
-//  - loadUser    : อ่านผู้ใช้จาก Session แล้วโหลด Role/สิทธิ์ล่าสุดจากฐานข้อมูลทุก Request
-//  - requireAuth : ป้องกันหน้า/API ที่ต้องเข้าสู่ระบบ
-// =====================================================================
 const { loadAccess, can } = require('../services/aclService');
 const { audit } = require('../services/auditService');
 
@@ -15,7 +10,6 @@ async function loadUser(req, res, next) {
     if (user && user.isActive) {
       req.user = user;
     } else {
-      // บัญชีถูกลบหรือถูกปิดใช้งาน → ยกเลิก Session ทันที
       await audit(req, {
         category: 'auth', action: 'session_revoked', result: 'denied', user: null,
         username: user ? user.username : null,

@@ -1,5 +1,3 @@
-// สร้างฐานข้อมูล (ถ้ายังไม่มี) + รัน database/schema.sql และ database/seed.sql
-// ใช้: npm run db:setup
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
@@ -30,7 +28,6 @@ function cleanUploads() {
   }
 }
 
-// คัดลอกไฟล์ตัวอย่าง (สลิป/ภาพเมนู) ให้ตรงกับแถวในตาราง files ที่ seed.sql สร้างไว้
 async function copySeedFiles(client) {
   const seedDir = path.join(__dirname, '..', 'database', 'seed-files');
   const rows = (await client.query('SELECT id, kind, original_name, stored_name FROM files')).rows;
